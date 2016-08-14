@@ -5,8 +5,74 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:NsfSwitchControl"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        
-    </Grid>
+        Title="IDI-NU Temperature-Impedance Measurement Switching Controller" Height="Auto" Width="800">
+    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Height="Auto">
+        <Grid Height="Auto" Margin="0,0,0,25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="163*"/>
+                <ColumnDefinition Width="629*"/>
+            </Grid.ColumnDefinitions>
+            <Label x:Name="__titleHardwareStatusLabel" Content="Hardware Connection Status" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <Label x:Name="__titleSwitchLabel" Content="Matrix Switch:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="0" />
+            <Label x:Name="__titleTemperatureLabel" Content="Temperature Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
+            <Label x:Name="__titleImpedanceLabel" Content="Impedance Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
+            <Label x:Name="labelSwitchConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="1" />
+            <Label x:Name="labelTemperatureConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" />
+            <Label x:Name="labelImpedanceConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="1" />
+        </Grid>
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="400"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label x:Name="__titleDataFolderLabel" Content="Data Folder:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <TextBox x:Name="textboxFolderPath" Width="Auto" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" />
+            <Button Content="Select Folder..." Grid.Row="0" Grid.Column="2" Click="Button_Click" VerticalAlignment="Center" />
+        </Grid>
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <Label x:Name="labelControllerStatus" Content="Uninitialized" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" Margin="25,0,0,0" IsEnabled="False" />
+            <WrapPanel Grid.Row="1" Grid.Column="0">
+                <Label x:Name="__titleTimeDesired" Content="Desired Time (min):" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxTimeDesired" Width="Auto" Grid.Row="1" Grid.Column="1" Text="15" VerticalAlignment="Center" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
+                <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelTimeElapsed" Content="00:00" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False"  />
+            </WrapPanel>
+        </Grid>
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="200"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="buttonInitializeControllers" Content="Initialize" Grid.Row="0" Grid.Column="0" Margin="50,0" Click="buttonInitializeControllers_Click" />
+            <Button x:Name="buttonStartCollection" Content="Start Collection" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" Click="buttonStartCollection_Click" />
+            <Button x:Name="buttonStopCollection" Content="Stop Collection" Grid.Row="0" Grid.Column="2" IsEnabled="False" Margin="50,0" Click="buttonStopCollection_Click" />
+            <Button x:Name="buttonFlushSystem" Content="Flush System" Grid.Row="0" Grid.Column="3" IsEnabled="False" Margin="50,0" Click="buttonFlushSystem_Click" />
+        </Grid>
+    </StackPanel>
 </Window>

@@ -1,18 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Data;
 
 using NationalInstruments;
 using NationalInstruments.ModularInstruments.NISwitch;
@@ -27,12 +16,80 @@ namespace NsfSwitchControl
     /// </summary>
     public partial class MainWindow : Window
     {
+        TemperatureMeasurementController tempMeasCont;
+        ImpedanceMeasurementController impMeasCont;
+        SwitchController swCont;
+        System.Windows.Threading.DispatcherTimer elapsedTimer;
+        DateTime startDateTime;
+
         public MainWindow()
         {
             InitializeComponent();
-            LoadSwitchDeviceNames();
         }
 
+        private void InitializeControllers(string saveFileLocationFolder)
+        {
+            string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
+            tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            var fileDialog = new System.Windows.Forms.FolderBrowserDialog();
+            var result = fileDialog.ShowDialog();
+            if (result == System.Windows.Forms.DialogResult.OK)
+                textboxFolderPath.Text = fileDialog.SelectedPath;
+        }
+
+        private void buttonInitializeControllers_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                InitializeControllers(textboxFolderPath.Text);
+                buttonInitializeControllers.IsEnabled = false;
+                buttonStartCollection.IsEnabled = true;
+                labelControllerStatus.Content = "Initialized";
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.ToString());
+            }
+        }
+
+        private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
+        {
+            tempMeasCont.StartMeasurement();
+            startDateTime = DateTime.Now;
+            elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 1), System.Windows.Threading.DispatcherPriority.Normal, delegate
+            {
+                labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
+            }, this.Dispatcher);
+            buttonStartCollection.IsEnabled = false;
+            buttonStopCollection.IsEnabled = true;
+            labelControllerStatus.Content = "Running...";
+        }
+
+        private void buttonStopCollection_Click(object sender, RoutedEventArgs e)
+        {
+            tempMeasCont.StopMeasurement();
+            elapsedTimer.IsEnabled = false;
+            buttonStopCollection.IsEnabled = false;
+            buttonFlushSystem.IsEnabled = true;
+            labelControllerStatus.Content = "Stopped";
+        }
+
+        private void buttonFlushSystem_Click(object sender, RoutedEventArgs e)
+        {
+            tempMeasCont = null;
+            buttonInitializeControllers.IsEnabled = true;
+            buttonFlushSystem.IsEnabled = false;
+            labelControllerStatus.Content = "Flushed";
+        }
+    }
+
+    // TODO: Write SwitchController class (which is NISwitch to the PXIe-2529)
+    public class SwitchController
+    {
         private void LoadSwitchDeviceNames()
         {
             ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem();//"NI-SWITCH");
@@ -42,10 +99,6 @@ namespace NsfSwitchControl
             }
         }
     }
-
-    // TODO: Write SwitchController class (which is NISwitch to the PXIe-2529)
-    public class SwitchController
-    { }
 
 
     // TODO: Write ImpedanceMeasurementController class (which is just VISA to the HM8118)
@@ -61,9 +114,6 @@ namespace NsfSwitchControl
 
         private AnalogMultiChannelReader analogInReader;
         private AsyncCallback myAsyncCallback;
-        private AnalogWaveform<double>[] data;
-        private DataColumn[] dataColumn = null;
-        private DataTable dataTable = null;
         private NationalInstruments.DAQmx.Task myTask;
         private NationalInstruments.DAQmx.Task runningTask;
         private List<string> channelsToUseAddresses = new List<string>();
@@ -93,8 +143,16 @@ namespace NsfSwitchControl
         {
             foreach (int channelId in __channelsToUse)
                 channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
-            dataWriteFile = new System.IO.StreamWriter(saveFileLocation);
+            dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             dataWriteFile.WriteLine(__dataTableHeader);
+        }
+
+
+        public void StopMeasurement()
+        {
+            runningTask = null;
+            if (myTask != null)
+                myTask.Dispose();
         }
 
 
@@ -139,6 +197,7 @@ namespace NsfSwitchControl
 
         // function called by async when data comes in from the PXIe-4537
         // basically it just reads and then writes to the file
+        // TODO: fix the problem where stop seems to mess up the writing, or at least the Async is mad slow
         private void AnalogInCallback(IAsyncResult ar)
         {
             try
@@ -165,13 +224,13 @@ namespace NsfSwitchControl
                 if (sourceArray.Length != __channelsToUse.Count)
                     throw new System.DataMisalignedException("Error: the incoming data has a different size than the number of channels!");
 
-                string currentDate= DateTime.Now.ToLongDateString();
-                string currentTime = DateTime.Now.ToLongTimeString();
+                string currentDate= DateTime.Now.ToString("yyyy-MM-dd");
+                string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
 
                 // assume sourceArray has channels in the original order
                 foreach (int sample in Enumerable.Range(0, __samplesPerChannelBeforeRelease))
                 {
-                    string currentLine = currentDate + "," + currentTime + ","; //String.Join(",", sourceArray);
+                    string currentLine = currentDate + "," + currentTime + ",";
                     double[] sampleData = new double[__channelsToUse.Count];
                     foreach (int channel in __channelsToUse)
                     {
@@ -183,7 +242,7 @@ namespace NsfSwitchControl
             }
             catch (System.DataMisalignedException dmex)
             {
-                MessageBox.Show(dmex.Message);
+                System.Windows.MessageBox.Show(dmex.Message);
             }
         }
 
@@ -191,7 +250,7 @@ namespace NsfSwitchControl
         // generic error handler to display any messages from DAQmx
         private void ErrorCatcher(DaqException exception)
         {
-            MessageBox.Show(exception.Message);
+            System.Windows.MessageBox.Show(exception.Message);
             myTask.Dispose();
             runningTask = null;
         }
