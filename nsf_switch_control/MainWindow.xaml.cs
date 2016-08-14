@@ -22,16 +22,44 @@ namespace NsfSwitchControl
         System.Windows.Threading.DispatcherTimer elapsedTimer;
         DateTime startDateTime;
 
+
         public MainWindow()
         {
             InitializeComponent();
+            CheckHardwareStatus();
         }
+
+
+        // TODO: write this to make sure all is well
+        private void CheckHardwareStatus()
+        {
+            // check for switches, which should be the matrix switch
+            ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem("NI-SWITCH");
+            if (modularInstrumentsSystem.DeviceCollection.Count == 1)
+            {
+                labelSwitchConnectionStatus.Content = "PXIe-2529 128-Connection OK";
+                labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+            }
+
+            // check for DAQs, which should be temperature system
+            var daq_channels = DaqSystem.Local.GetPhysicalChannels(PhysicalChannelTypes.AI, PhysicalChannelAccess.External);
+            if (daq_channels.Count() == 20)
+            {
+                labelTemperatureConnectionStatus.Content = "PXIe-4537 20-Channel OK";
+                labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+            }
+
+            // TODO: use NI-VISA to *IDN?\r the HM8118
+
+        }
+
 
         private void InitializeControllers(string saveFileLocationFolder)
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
         }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -40,6 +68,7 @@ namespace NsfSwitchControl
             if (result == System.Windows.Forms.DialogResult.OK)
                 textboxFolderPath.Text = fileDialog.SelectedPath;
         }
+
 
         private void buttonInitializeControllers_Click(object sender, RoutedEventArgs e)
         {
@@ -56,6 +85,7 @@ namespace NsfSwitchControl
             }
         }
 
+
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
             tempMeasCont.StartMeasurement();
@@ -69,6 +99,7 @@ namespace NsfSwitchControl
             labelControllerStatus.Content = "Running...";
         }
 
+
         private void buttonStopCollection_Click(object sender, RoutedEventArgs e)
         {
             tempMeasCont.StopMeasurement();
@@ -77,6 +108,7 @@ namespace NsfSwitchControl
             buttonFlushSystem.IsEnabled = true;
             labelControllerStatus.Content = "Stopped";
         }
+
 
         private void buttonFlushSystem_Click(object sender, RoutedEventArgs e)
         {

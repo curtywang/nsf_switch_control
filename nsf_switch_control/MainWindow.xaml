@@ -15,10 +15,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="163*"/>
-                <ColumnDefinition Width="629*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Label x:Name="__titleHardwareStatusLabel" Content="Hardware Connection Status" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <Label x:Name="__titleHardwareStatusLabel" Content="Hardware Connection Status" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" FontWeight="Bold" />
             <Label x:Name="__titleSwitchLabel" Content="Matrix Switch:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="0" />
             <Label x:Name="__titleTemperatureLabel" Content="Temperature Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
             <Label x:Name="__titleImpedanceLabel" Content="Impedance Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
