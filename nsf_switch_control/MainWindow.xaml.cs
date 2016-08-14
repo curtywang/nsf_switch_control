@@ -170,7 +170,6 @@ namespace NsfSwitchControl
     }
 
 
-    // TODO: Write ImpedanceMeasurementController class (which is just VISA to the HM8118)
     public class ImpedanceMeasurementController
     {
         private NationalInstruments.Visa.ResourceManager rmSession;
@@ -241,17 +240,13 @@ namespace NsfSwitchControl
         }
 
 
+        // remember to check if LCR meter is ready first
         public string GetZThetaValue()
         {
             try
             {
-                if (IsLCRMeterReady() == true)
-                {
-                    mbSession.RawIO.Write("XALL?" + __termchar);
-                    return (mbSession.RawIO.ReadString());
-                }
-                else
-                    throw new Ivi.Visa.IOTimeoutException(-1, null, "LCR meter wasn't ready and timed out!");
+                mbSession.RawIO.Write("XALL?" + __termchar);
+                return (mbSession.RawIO.ReadString());
             }
             catch (Ivi.Visa.IOTimeoutException ex)
             {
