@@ -1,4 +1,14 @@
-﻿using System;
+﻿/* Copyright 2016 by Northwestern University
+ * Authors: Y. Curtis Wang and Terence C. Chan
+ * 
+ * Namespace: NsfSwitchControl
+ * Description: This namespace implements controllers for collecting impedance and temperature data
+ * using a National Instruments PXIe-2529 matrix switch, National Instruments PXIe-4537 RTD DAQ,
+ * and a Hameg HM8118 LCR meter. The matrix switch controller switches between applying power
+ * and connecting the LCR meter based on the desired duty cycle. The temperature controller
+ * does not currently sync with the impedance controller but does sync with system time.
+*/
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -30,7 +40,6 @@ namespace NsfSwitchControl
         }
 
 
-        // TODO: write this to make sure all is well
         private void CheckHardwareStatus()
         {
             // check for switches, which should be the matrix switch
@@ -40,6 +49,11 @@ namespace NsfSwitchControl
                 labelSwitchConnectionStatus.Content = "PXIe-2529 128-Connection OK";
                 labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
             }
+            else
+            {
+                labelSwitchConnectionStatus.Content = "Problem with PXIe-2529 128-Connection";
+                labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+            }
 
             // check for DAQs, which should be temperature system
             var daq_channels = DaqSystem.Local.GetPhysicalChannels(PhysicalChannelTypes.AI, PhysicalChannelAccess.External);
@@ -48,9 +62,27 @@ namespace NsfSwitchControl
                 labelTemperatureConnectionStatus.Content = "PXIe-4537 20-Channel OK";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
             }
+            else
+            {
+                labelTemperatureConnectionStatus.Content = "Problem with PXIe-4537 20-Channel";
+                labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+            }
 
-            // TODO: use NI-VISA to *IDN?\r the HM8118
-
+            // check for HM8118 via NI-VISA *IDN?\r command
+            impMeasCont = new ImpedanceMeasurementController();
+            if (impMeasCont.IsEnabled == true)
+            {
+                if (impMeasCont.TestConnection() == true)
+                {
+                    labelImpedanceConnectionStatus.Content = "HM8118 VISA OK";
+                    labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+                }
+            }
+            else
+            {
+                labelImpedanceConnectionStatus.Content = "Problem with HM8118 VISA";
+                labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+            }
         }
 
 
@@ -140,7 +172,95 @@ namespace NsfSwitchControl
 
     // TODO: Write ImpedanceMeasurementController class (which is just VISA to the HM8118)
     public class ImpedanceMeasurementController
-    { }
+    {
+        private NationalInstruments.Visa.ResourceManager rmSession;
+        private NationalInstruments.Visa.MessageBasedSession mbSession;
+        public bool IsEnabled;
+
+        static private string __lcrMeterPort = "ASRL5::INSTR";
+        static private int __lcrFrequency = 100000;
+        static private string __termchar = "\r";
+
+        public ImpedanceMeasurementController()
+        {
+            try
+            {
+                rmSession = new ResourceManager();
+                mbSession = (MessageBasedSession)rmSession.Open(__lcrMeterPort);
+                mbSession.SynchronizeCallbacks = true;
+                mbSession.RawIO.Write("*RCL 0" + __termchar);
+                bool LcrReady = IsLCRMeterReady();
+                if (LcrReady == false)
+                    throw new Exception("The LCR meter timed out...");
+                IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to connect to the HM8118, check the port. \nError: " + ex.Message);
+                IsEnabled = false;
+            }
+        }
+
+
+        public bool TestConnection() {
+            try
+            {
+                mbSession.RawIO.Write("*IDN?" + __termchar);
+                string response = mbSession.RawIO.ReadString();
+                if (response == "HAMEG Instruments, HM8118,026608583,1.57\r")
+                    return true;
+                else
+                    return false;
+            }
+            catch (Ivi.Visa.IOTimeoutException ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
+        }
+
+
+        // busy wait to check if LCR meter
+        // TODO: could Async I suppose
+        public bool IsLCRMeterReady()
+        {
+            for (int i = 0; i < 10000; ++i) {
+                try
+                {
+                    mbSession.RawIO.Write("*OPC?" + __termchar);
+                    string response = mbSession.RawIO.ReadString();
+                    if (response == "1\r")
+                        return true;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return false;
+        }
+
+
+        public string GetZThetaValue()
+        {
+            try
+            {
+                if (IsLCRMeterReady() == true)
+                {
+                    mbSession.RawIO.Write("XALL?" + __termchar);
+                    return (mbSession.RawIO.ReadString());
+                }
+                else
+                    throw new Ivi.Visa.IOTimeoutException(-1, null, "LCR meter wasn't ready and timed out!");
+            }
+            catch (Ivi.Visa.IOTimeoutException ex)
+            {
+                MessageBox.Show(ex.Message);
+                return "";
+            }
+        }
+
+    }
 
 
     public class TemperatureMeasurementController
