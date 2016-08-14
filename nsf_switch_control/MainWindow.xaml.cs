@@ -74,10 +74,15 @@ namespace NsfSwitchControl
         {
             try
             {
-                InitializeControllers(textboxFolderPath.Text);
-                buttonInitializeControllers.IsEnabled = false;
-                buttonStartCollection.IsEnabled = true;
-                labelControllerStatus.Content = "Initialized";
+                if (textboxFolderPath.Text != "")
+                {
+                    InitializeControllers(textboxFolderPath.Text);
+                    buttonInitializeControllers.IsEnabled = false;
+                    buttonStartCollection.IsEnabled = true;
+                    labelControllerStatus.Content = "Initialized";
+                }
+                else
+                    System.Windows.MessageBox.Show("You forgot to choose a path!");
             }
             catch (Exception ex)
             {
