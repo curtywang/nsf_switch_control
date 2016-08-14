@@ -157,8 +157,11 @@ namespace NsfSwitchControl
     }
 
     // TODO: Write SwitchController class (which is NISwitch to the PXIe-2529)
+    // TODO: it's not clear whether the IMC or SMC is going to write impedance files and which groups and timestamps...
     public class SwitchController
     {
+        static private List<string> switchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+
         private void LoadSwitchDeviceNames()
         {
             ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem();//"NI-SWITCH");
@@ -255,6 +258,19 @@ namespace NsfSwitchControl
             }
         }
 
+
+        private void OnReadComplete(Ivi.Visa.IVisaAsyncResult result)
+        {
+            try
+            {
+                string responseString = mbSession.RawIO.EndReadString(result);
+            }
+            catch (Exception exp)
+            {
+                MessageBox.Show(exp.Message);
+            }
+        }
+
     }
 
 
@@ -305,6 +321,7 @@ namespace NsfSwitchControl
             runningTask = null;
             if (myTask != null)
                 myTask.Dispose();
+            dataWriteFile.Close();
         }
 
 
