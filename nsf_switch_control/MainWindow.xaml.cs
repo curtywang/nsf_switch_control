@@ -70,13 +70,10 @@ namespace NsfSwitchControl
 
             // check for HM8118 via NI-VISA *IDN?\r command
             impMeasCont = new ImpedanceMeasurementController();
-            if (impMeasCont.IsEnabled == true)
+            if (impMeasCont.IsEnabled == true && impMeasCont.TestConnection() == true)
             {
-                if (impMeasCont.TestConnection() == true)
-                {
-                    labelImpedanceConnectionStatus.Content = "HM8118 VISA OK";
-                    labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
-                }
+                labelImpedanceConnectionStatus.Content = "HM8118 VISA OK";
+                labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
             }
             else
             {
@@ -190,7 +187,11 @@ namespace NsfSwitchControl
                 rmSession = new ResourceManager();
                 mbSession = (MessageBasedSession)rmSession.Open(__lcrMeterPort);
                 mbSession.SynchronizeCallbacks = true;
+                mbSession.TerminationCharacter = (byte)'\r';
+                mbSession.TerminationCharacterEnabled = true;
+                mbSession.SendEndEnabled = false;
                 mbSession.RawIO.Write("*RCL 0" + __termchar);
+                //System.Threading.Thread.Sleep(1000);
                 bool LcrReady = IsLCRMeterReady();
                 if (LcrReady == false)
                     throw new Exception("The LCR meter timed out...");
@@ -223,13 +224,14 @@ namespace NsfSwitchControl
 
 
         // busy wait to check if LCR meter
-        // TODO: could Async I suppose
+        // TODO: could Async I suppose, but it should be blocking anyway
         public bool IsLCRMeterReady()
         {
             for (int i = 0; i < 10000; ++i) {
                 try
                 {
                     mbSession.RawIO.Write("*OPC?" + __termchar);
+                    //System.Threading.Thread.Sleep(2000);
                     string response = mbSession.RawIO.ReadString();
                     if (response == "1\r")
                         return true;
