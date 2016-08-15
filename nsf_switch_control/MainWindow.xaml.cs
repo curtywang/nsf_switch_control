@@ -3,7 +3,7 @@
  * 
  * Namespace: NsfSwitchControl
  * Description: This namespace implements controllers for collecting impedance and temperature data
- * using a National Instruments PXIe-2529 matrix switch, National Instruments PXIe-4537 RTD DAQ,
+ * using a National Instruments PXIe-2529 matrix switch, National Instruments PXIe-4357 RTD DAQ,
  * and a Hameg HM8118 LCR meter. The matrix switch controller switches between applying power
  * and connecting the LCR meter based on the desired duty cycle. The temperature controller
  * does not currently sync with the impedance controller but does sync with system time.
@@ -26,21 +26,23 @@ namespace NsfSwitchControl
     /// </summary>
     public partial class MainWindow : Window
     {
-        TemperatureMeasurementController tempMeasCont;
-        ImpedanceMeasurementController impMeasCont;
-        SwitchController swCont;
-        System.Windows.Threading.DispatcherTimer elapsedTimer;
-        DateTime startDateTime;
-
+        private TemperatureMeasurementController tempMeasCont;
+        private LcrMeterController lcrMeterCont;
+        private SwitchMatrixController swCont;
+        private System.Windows.Threading.DispatcherTimer elapsedTimer;
+        private DateTime startDateTime;
+        private ImpedanceMeasurementController impMeasCont;
+        private List<string> measurementPermutations;
+        private List<string> ablationPermutations;
 
         public MainWindow()
         {
             InitializeComponent();
-            CheckHardwareStatus();
+            CheckHardwareStatusAndInintializeImpedanceMeasurementController();
         }
 
 
-        private void CheckHardwareStatus()
+        private void CheckHardwareStatusAndInintializeImpedanceMeasurementController()
         {
             // check for switches, which should be the matrix switch
             ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem("NI-SWITCH");
@@ -59,18 +61,18 @@ namespace NsfSwitchControl
             var daq_channels = DaqSystem.Local.GetPhysicalChannels(PhysicalChannelTypes.AI, PhysicalChannelAccess.External);
             if (daq_channels.Count() == 20)
             {
-                labelTemperatureConnectionStatus.Content = "PXIe-4537 20-Channel OK";
+                labelTemperatureConnectionStatus.Content = "PXIe-4357 20-Channel OK";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
             }
             else
             {
-                labelTemperatureConnectionStatus.Content = "Problem with PXIe-4537 20-Channel";
+                labelTemperatureConnectionStatus.Content = "Problem with PXIe-4357 20-Channel";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
             }
 
             // check for HM8118 via NI-VISA *IDN?\r command
-            impMeasCont = new ImpedanceMeasurementController();
-            if (impMeasCont.IsEnabled == true && impMeasCont.TestConnection() == true)
+            lcrMeterCont = new LcrMeterController();
+            if (lcrMeterCont.IsEnabled == true && lcrMeterCont.TestConnection() == true)
             {
                 labelImpedanceConnectionStatus.Content = "HM8118 VISA OK";
                 labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
@@ -83,7 +85,7 @@ namespace NsfSwitchControl
         }
 
 
-        private void InitializeControllers(string saveFileLocationFolder)
+        private void InitializeSwitchAndTemperatureControllers(string saveFileLocationFolder)
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
@@ -105,7 +107,7 @@ namespace NsfSwitchControl
             {
                 if (textboxFolderPath.Text != "")
                 {
-                    InitializeControllers(textboxFolderPath.Text);
+                    InitializeSwitchAndTemperatureControllers(textboxFolderPath.Text);
                     buttonInitializeControllers.IsEnabled = false;
                     buttonStartCollection.IsEnabled = true;
                     labelControllerStatus.Content = "Initialized";
@@ -124,7 +126,7 @@ namespace NsfSwitchControl
         {
             tempMeasCont.StartMeasurement();
             startDateTime = DateTime.Now;
-            elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 1), System.Windows.Threading.DispatcherPriority.Normal, delegate
+            elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
             {
                 labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
             }, this.Dispatcher);
@@ -153,11 +155,11 @@ namespace NsfSwitchControl
         }
     }
 
-    // TODO: Write SwitchController class (which is NISwitch to the PXIe-2529)
-    // TODO: it's not clear whether the IMC or SMC is going to write impedance files and which groups and timestamps...
-    public class SwitchController
+
+    // TODO: Write SwitchMatrixController class (which is NISwitch to the PXIe-2529)
+    public class SwitchMatrixController
     {
-        static private List<string> switchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private List<string> switchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
 
         private void LoadSwitchDeviceNames()
         {
@@ -172,6 +174,14 @@ namespace NsfSwitchControl
 
     public class ImpedanceMeasurementController
     {
+        private System.IO.StreamWriter dataWriteFile;
+        private List<string> switchGroups;
+        static private string __dataTableHeader;
+    }
+
+
+    public class LcrMeterController
+    {
         private NationalInstruments.Visa.ResourceManager rmSession;
         private NationalInstruments.Visa.MessageBasedSession mbSession;
         public bool IsEnabled;
@@ -180,7 +190,7 @@ namespace NsfSwitchControl
         static private int __lcrFrequency = 100000;
         static private string __termchar = "\r";
 
-        public ImpedanceMeasurementController()
+        public LcrMeterController()
         {
             try
             {
@@ -195,11 +205,12 @@ namespace NsfSwitchControl
                 bool LcrReady = IsLCRMeterReady();
                 if (LcrReady == false)
                     throw new Exception("The LCR meter timed out...");
+                this.SetLcrMeterFrequency(__lcrFrequency);
                 IsEnabled = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Unable to connect to the HM8118, check the port. \nError: " + ex.Message);
+                MessageBox.Show("Unable to connect to the HM8118, check the port. \nError: " + ex.Message, "ImpedanceMeasurementController constructor failure");
                 IsEnabled = false;
             }
         }
@@ -217,7 +228,7 @@ namespace NsfSwitchControl
             }
             catch (Ivi.Visa.IOTimeoutException ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "TestConnection() Failure");
                 return false;
             }
         }
@@ -226,11 +237,10 @@ namespace NsfSwitchControl
         // busy wait to check if LCR meter
         public bool IsLCRMeterReady()
         {
-            for (int i = 0; i < 10000; ++i) {
+            for (int i = 0; i < 100; ++i) {
                 try
                 {
                     mbSession.RawIO.Write("*OPC?" + __termchar);
-                    //System.Threading.Thread.Sleep(2000);
                     string response = mbSession.RawIO.ReadString();
                     if (response == "1\r")
                         return true;
@@ -254,21 +264,27 @@ namespace NsfSwitchControl
             }
             catch (Ivi.Visa.IOTimeoutException ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show(ex.Message, "GetZThetaValue() Failure");
                 return "";
             }
         }
 
 
-        private void OnReadComplete(Ivi.Visa.IVisaAsyncResult result)
+        public bool SetLcrMeterFrequency(int desiredFreq)
         {
             try
             {
-                string responseString = mbSession.RawIO.EndReadString(result);
+                mbSession.RawIO.Write("FREQ "+ desiredFreq.ToString() + __termchar);
+                mbSession.RawIO.Write("FREQ?" + __termchar);
+                if (mbSession.RawIO.ReadString() == desiredFreq.ToString()+"\r")
+                    return true;
+                else
+                    return false;
             }
-            catch (Exception exp)
+            catch (Ivi.Visa.IOTimeoutException ex)
             {
-                MessageBox.Show(exp.Message);
+                MessageBox.Show(ex.Message, "SetLcrMeterFrequency() Failure");
+                return false;
             }
         }
 
@@ -277,16 +293,13 @@ namespace NsfSwitchControl
 
     public class TemperatureMeasurementController
     {
-        // TODO: sync with the impedance reader so a temperature reading occurs the same time as a impedance measurement 
-        // (I think if we just start both at the same time, since one is at 2 Hz, then the other should just switch within 0.25 seconds and have a reading at 0.5 seconds)
-        // (of course it's largely dependent on the max speed of the LCR meter) 
-
+        // TODO: Maybe sync with the impedance reader so a temperature reading occurs the same time as a impedance measurement 
         private AnalogMultiChannelReader analogInReader;
         private AsyncCallback myAsyncCallback;
         private NationalInstruments.DAQmx.Task myTask;
         private NationalInstruments.DAQmx.Task runningTask;
         private List<string> channelsToUseAddresses = new List<string>();
-        System.IO.StreamWriter dataWriteFile;
+        private System.IO.StreamWriter dataWriteFile;
 
         // RTD physical configuration
         static private List<int> __channelsToUse = new List<int>(Enumerable.Range(0, 20)); // use all of the channels
@@ -305,14 +318,16 @@ namespace NsfSwitchControl
         static private int __samplesPerChannelBeforeRelease = 1;
 
         // Data table configuration
-        static private string __dataTableHeader = "date,time," + String.Join(",", __channelsToUse);
+        static private string __dataTableHeader; 
 
 
         public TemperatureMeasurementController(string saveFileLocation)
         {
+            // the USB daq uses "cDAQ1Mod1/aiX" as its location
             foreach (int channelId in __channelsToUse)
                 channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
+            __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
         }
 
@@ -326,7 +341,6 @@ namespace NsfSwitchControl
         }
 
 
-        // function called to start measurements
         public void StartMeasurement()
         {
             try
@@ -334,7 +348,7 @@ namespace NsfSwitchControl
                 myTask = new NationalInstruments.DAQmx.Task();
                 myAsyncCallback = new AsyncCallback(AnalogInCallback);
 
-                // tell the PXIe-4537 to use the channels in channelsToUse
+                // tell the PXIe-4357 to use the channels in channelsToUse
                 foreach (string channel in channelsToUseAddresses)
                 {
                     myTask.AIChannels.CreateRtdChannel(channel, "", __minimumValueNumeric, __maximumValueNumeric,
@@ -342,11 +356,11 @@ namespace NsfSwitchControl
                         __currentExcitationNumeric, __r0Numeric);
                 }
 
-                // tell the PXIe-4537 to use its internal sample clock at some sample rate
+                // tell the PXIe-4357 to use its internal sample clock at some sample rate
                 myTask.Timing.ConfigureSampleClock("", __sampleRate, SampleClockActiveEdge.Rising,
                     SampleQuantityMode.ContinuousSamples, __samplesPerChannelBeforeRelease);
 
-                // check if the PXIe-4537 likes our settings
+                // check if the PXIe-4357 likes our settings
                 myTask.Control(TaskAction.Verify);
 
                 // declare the reader object for the task and prepare to run the task
@@ -365,9 +379,8 @@ namespace NsfSwitchControl
         }
 
 
-        // function called by async when data comes in from the PXIe-4537
+        // function called by async when data comes in from the PXIe-4357
         // basically it just reads and then writes to the file
-        // TODO: fix the problem where stop seems to mess up the writing, or at least the Async is mad slow
         private void AnalogInCallback(IAsyncResult ar)
         {
             try
@@ -391,10 +404,10 @@ namespace NsfSwitchControl
         {
             try
             {
-                if (sourceArray.Length != __channelsToUse.Count)
+                if (sourceArray.Length != channelsToUseAddresses.Count)
                     throw new System.DataMisalignedException("Error: the incoming data has a different size than the number of channels!");
 
-                string currentDate= DateTime.Now.ToString("yyyy-MM-dd");
+                string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
                 string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
 
                 // assume sourceArray has channels in the original order
