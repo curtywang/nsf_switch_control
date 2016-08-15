@@ -44,7 +44,7 @@ namespace NsfSwitchControl
         {
             // check for switches, which should be the matrix switch
             ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem("NI-SWITCH");
-            if (modularInstrumentsSystem.DeviceCollection.Count == 1)
+            if (modularInstrumentsSystem.DeviceCollection.Count == 1 && modularInstrumentsSystem.DeviceCollection[0].Model == "NI PXIe-2529")
             {
                 labelSwitchConnectionStatus.Content = "PXIe-2529 128-Connection OK";
                 labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
@@ -224,7 +224,6 @@ namespace NsfSwitchControl
 
 
         // busy wait to check if LCR meter
-        // TODO: could Async I suppose, but it should be blocking anyway
         public bool IsLCRMeterReady()
         {
             for (int i = 0; i < 10000; ++i) {
