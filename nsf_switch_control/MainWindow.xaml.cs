@@ -32,8 +32,8 @@ namespace NsfSwitchControl
         private System.Windows.Threading.DispatcherTimer elapsedTimer;
         private DateTime startDateTime;
         private ImpedanceMeasurementController impMeasCont;
-        private List<string> measurementPermutations;
-        private List<string> ablationPermutations;
+        private List<Dictionary<string, List<string>>> measurementPermutations;
+        private List<Dictionary<string, List<string>>> ablationPermutations;
 
         public MainWindow()
         {
@@ -156,27 +156,156 @@ namespace NsfSwitchControl
     }
 
 
-    // TODO: Write SwitchMatrixController class (which is NISwitch to the PXIe-2529)
     public class SwitchMatrixController
     {
-        private List<string> switchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private NISwitch switchSession;
+        private List<Dictionary<string,List<string>>> impedanceSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private int impedanceCounter = 0;
+        private int ablationCounter = 0;
 
-        private void LoadSwitchDeviceNames()
+        static private string __switchAddress = "PXI1Slot2";
+        static private string __switchTopology = "2529/2-Wire 4x32 Matrix";
+        static private string __lcrMeterPositive = "r0";
+        static private string __lcrMeterNegative = "r1";
+        static private string __rfGeneratorPositive = "r2";
+        static private string __rfGeneratorNegative = "r3";
+        static private string __rfGeneratorSwitch = "c31";
+        static private PrecisionTimeSpan maxTime = new PrecisionTimeSpan(5);
+
+        public SwitchMatrixController(List<Dictionary<string, List<string>>> impGroups, List<Dictionary<string, List<string>>> ablGroups)
         {
-            ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem();//"NI-SWITCH");
-            foreach (DeviceInfo device in modularInstrumentsSystem.DeviceCollection)
+            try
             {
-                Console.WriteLine(device.Name);
+                switchSession = new NISwitch(__switchAddress, __switchTopology, false, true);
+                switchSession.DriverOperation.Warning += new System.EventHandler<SwitchWarningEventArgs>(DriverOperationWarning);
+                impedanceSwitchGroups = impGroups;
+                ablationSwitchGroups = ablGroups;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "SwitchMatrixController() failure");
+                throw new Exception("Error: Could not create SwitchMatrixController!");
+            }
+        }
+
+
+        public Dictionary<string, List<string>> GetNextImpedancePermutation()
+        {
+            if (impedanceCounter + 1 >= impedanceSwitchGroups.Count)
+                return impedanceSwitchGroups[0];
+            return impedanceSwitchGroups[impedanceCounter + 1];
+        }
+
+
+        public bool UseNextImpedancePermutation()
+        {
+            try
+            {
+                switchSession.Path.DisconnectAll();
+                ++impedanceCounter;
+                if (impedanceCounter >= impedanceSwitchGroups.Count)
+                    impedanceCounter = 0;
+                string connectionList = "";
+                foreach (string channel in impedanceSwitchGroups[impedanceCounter]["Positive"])
+                {
+                    connectionList += __lcrMeterPositive + "->" + channel + ",";
+                }
+                switchSession.Path.ConnectMultiple(connectionList);
+                connectionList = "";
+                foreach (string channel in impedanceSwitchGroups[impedanceCounter]["Negative"])
+                {
+                    connectionList += __lcrMeterNegative + "->" + channel + ",";
+                }
+                switchSession.Path.ConnectMultiple(connectionList);
+                // Wait for any relay to activate and debounce.
+                switchSession.Path.WaitForDebounce(maxTime);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "SwitchMatrixController.UseNextImpedancePermutation() failure");
+                return false;
+            }
+        }
+
+
+        public Dictionary<string, List<string>> GetNextAblationPermutation()
+        {
+            if (ablationCounter + 1 >= ablationSwitchGroups.Count)
+                return ablationSwitchGroups[0];
+            return ablationSwitchGroups[ablationCounter + 1];
+        }
+
+
+        public bool UseNextAblationPermutation()
+        {
+            try
+            {
+                switchSession.Path.DisconnectAll();
+                ++ablationCounter;
+                if (ablationCounter >= ablationSwitchGroups.Count)
+                    ablationCounter = 0;
+                string connectionList = "";
+                foreach (string channel in ablationSwitchGroups[impedanceCounter]["Positive"])
+                {
+                    connectionList += __rfGeneratorPositive + "->" + channel + ",";
+                }
+                switchSession.Path.ConnectMultiple(connectionList);
+                connectionList = "";
+                foreach (string channel in ablationSwitchGroups[impedanceCounter]["Negative"])
+                {
+                    connectionList += __rfGeneratorNegative + "->" + channel + ",";
+                }
+                switchSession.Path.ConnectMultiple(connectionList);
+                // Wait for any relay to activate and debounce.
+                switchSession.Path.WaitForDebounce(maxTime);
+                // connect c31 to __rfGeneratorNegative to turn it all on
+                switchSession.Path.Connect(__rfGeneratorNegative, __rfGeneratorSwitch);
+                switchSession.Path.WaitForDebounce(maxTime);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "SwitchMatrixController.UseNextAblationPermutation() failure");
+                return false;
+            }
+        }
+
+
+        private void DriverOperationWarning(object sender, SwitchWarningEventArgs e)
+        {
+            MessageBox.Show(e.ToString(), "Warning");
+        }
+
+
+        private void CloseSession()
+        {
+            if (switchSession != null)
+            {
+                try
+                {
+                    switchSession.Close();
+                    switchSession = null;
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show("Unable to Close Session, Reset the device.\n" + "Error : " + ex.Message, "SwitchMatrixController.CloseSession() failure");
+                }
             }
         }
     }
 
-
+    // TODO: Get the impedance measurement group and then write its impedance value to file with timestamp
     public class ImpedanceMeasurementController
     {
         private System.IO.StreamWriter dataWriteFile;
-        private List<string> switchGroups;
+        private List<Dictionary<string, List<string>>> impedanceSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
         static private string __dataTableHeader;
+
+        // TODO: generate groups based on NESWTBXYZ
     }
 
 
