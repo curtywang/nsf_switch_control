@@ -38,11 +38,13 @@ namespace NsfSwitchControl
         public MainWindow()
         {
             InitializeComponent();
-            CheckHardwareStatusAndInintializeImpedanceMeasurementController();
+            CheckHardwareStatus();
+            impMeasCont = new ImpedanceMeasurementController();
+            //InitializeControllers();
         }
 
 
-        private void CheckHardwareStatusAndInintializeImpedanceMeasurementController()
+        private void CheckHardwareStatus()
         {
             // check for switches, which should be the matrix switch
             ModularInstrumentsSystem modularInstrumentsSystem = new ModularInstrumentsSystem("NI-SWITCH");
@@ -59,7 +61,7 @@ namespace NsfSwitchControl
 
             // check for DAQs, which should be temperature system
             var daq_channels = DaqSystem.Local.GetPhysicalChannels(PhysicalChannelTypes.AI, PhysicalChannelAccess.External);
-            if (daq_channels.Count() == 20)
+            if (daq_channels.Count() >= 20)
             {
                 labelTemperatureConnectionStatus.Content = "PXIe-4357 20-Channel OK";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
@@ -130,6 +132,9 @@ namespace NsfSwitchControl
             {
                 labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
             }, this.Dispatcher);
+
+            // TODO: dispatcher timer for asking the ImpedanceMeasurementController to collect data, which then calls to set ablation after and resets timer
+
             buttonStartCollection.IsEnabled = false;
             buttonStopCollection.IsEnabled = true;
             labelControllerStatus.Content = "Running...";
@@ -297,15 +302,94 @@ namespace NsfSwitchControl
         }
     }
 
-    // TODO: Get the impedance measurement group and then write its impedance value to file with timestamp
+    
     public class ImpedanceMeasurementController
     {
         private System.IO.StreamWriter dataWriteFile;
-        private List<Dictionary<string, List<string>>> impedanceSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
-        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
-        static private string __dataTableHeader;
+        private List<Dictionary<string, List<string>>> impedanceSwitchGroups; // TODO: groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // TODO: groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private SwitchMatrixController swMatCont;
 
-        // TODO: generate groups based on NESWTBXYZ
+
+        static private string __dataTableHeader;
+        static private List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
+        static private List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
+        static private List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
+        static private List<string> __groupW = new List<string> { "c12", "c13", "c14", "c15" };
+        static private List<string> __groupB = new List<string> { "c16", "c17", "c18", "c19" };
+        static private List<string> __groupT = new List<string> { "c20" };
+        static private List<string> __groupX = new List<string> { "c21" };
+        static private List<string> __groupY = new List<string> { "c22" };
+        static private List<string> __groupZ = new List<string> { "c23" };
+        static private List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
+        static private List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
+        static private List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
+
+
+        public ImpedanceMeasurementController()
+        {
+            impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
+            foreach (string extCode in __externalElectrodes)
+            {
+                foreach (string intCode in __internalElectrodes)
+                {
+                    impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
+                }
+            }
+
+            ablationSwitchGroups = new List<Dictionary<string, List<string>>>();
+            swMatCont = new SwitchMatrixController(impedanceSwitchGroups, ablationSwitchGroups);
+        }
+
+
+        // pass in "N", then return __groupN
+        private List<string> ConvertFaceCodeToColumns(string in_code)
+        {
+            switch (in_code)
+            {
+                case "N":
+                    return __groupN;
+                case "E":
+                    return __groupE;
+                case "S":
+                    return __groupS;
+                case "W":
+                    return __groupW;
+                case "B":
+                    return __groupB;
+                case "T":
+                    return __groupT;
+                case "X":
+                    return __groupX;
+                case "Y":
+                    return __groupY;
+                case "Z":
+                    return __groupZ;
+                case "AllInternal":
+                    return __groupAllInternal;
+                default:
+                    return new List<string>();
+            }
+        }
+
+
+        // generate permutation groups for Positive and Negative based on NESWTBXYZ, like pass in (["N",
+        // TODO: possibly look at multiple faces to one face or something in the future
+        private Dictionary<string, List<string>> ConvertPositiveNegativeFaceCodeToPermutation(string posCode, string negCode)
+        {
+            List<string> posColumns = ConvertFaceCodeToColumns(posCode);
+            List<string> negColumns = ConvertFaceCodeToColumns(negCode);
+            Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { { "Positive", posColumns}, {"Negative", negColumns } };
+            return returnDict;
+        }
+
+
+        // TODO: Loop through the impedance measurement groups and then write its impedance value to file with timestamp
+        private bool CollectImpedanceMeasurements()
+        {
+            return false;
+        }
+
     }
 
 
