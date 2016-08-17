@@ -93,7 +93,8 @@ namespace NsfSwitchControl
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
-            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, saveFileLocation);
+            int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
+            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
         }
 
@@ -136,6 +137,8 @@ namespace NsfSwitchControl
             elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
             {
                 labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
+                if (impMeasCont.IsComplete)
+                    StopCollection(true);
             }, this.Dispatcher);
             buttonStartCollection.IsEnabled = false;
             buttonStopCollection.IsEnabled = true;
@@ -143,14 +146,26 @@ namespace NsfSwitchControl
         }
 
 
-        private void buttonStopCollection_Click(object sender, RoutedEventArgs e)
+        private void StopCollection(bool isComplete)
         {
             tempMeasCont.StopMeasurement();
             impMeasCont.StopCollection();
             elapsedTimer.IsEnabled = false;
             buttonStopCollection.IsEnabled = false;
             buttonFlushSystem.IsEnabled = true;
-            labelControllerStatus.Content = "Stopped";
+            if (isComplete)
+            {
+                labelControllerStatus.Content = "Complete";
+                labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+            }
+            else
+                labelControllerStatus.Content = "Stopped";
+        }
+
+
+        private void buttonStopCollection_Click(object sender, RoutedEventArgs e)
+        {
+            StopCollection(false);
         }
 
 
@@ -290,9 +305,14 @@ namespace NsfSwitchControl
         private System.Threading.Timer collectionTimer;
         private System.Threading.TimerCallback collectCallback;
         private bool collectData = false;
+        public bool IsComplete = false;
+        private bool preAblation = true;
 
-        static private string __dataTableHeader;
-        static private int __measurementInterval; 
+        private int __totalNumberOfSamples;
+        private int __currentNumberOfSamples;
+        private string __dataTableHeader;
+        static private int __preAblationMilliseconds = 5000; // TODO: change this if needed
+        static private int __measurementInterval;
         static private List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
         static private List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
         static private List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
@@ -307,9 +327,11 @@ namespace NsfSwitchControl
         static private List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
 
 
-        public ImpedanceMeasurementController(int measurementInterval, string saveFileLocation)
+        public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation)
         {
-            __measurementInterval = measurementInterval;
+            __totalNumberOfSamples = sampleTotal;
+            __currentNumberOfSamples = 0;
+            __measurementInterval = measurementInterval*1000;
             lcrMeterCont = new LcrMeterController();
 
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
@@ -335,15 +357,17 @@ namespace NsfSwitchControl
                 alreadyUsed.Add(intCode1);
             }
 
-            // TODO: get me some ablation groups yeah? maybe we start with every-two?
-            ablationSwitchGroups = new List<Dictionary<string, List<string>>>();
+            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+                { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } };
 
             swMatCont = new SwitchMatrixController();
             collectCallback = new System.Threading.TimerCallback(CollectData);
 
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation + ".impedance.csv");
-            __dataTableHeader = "date,time,pos,neg,impedance,phase";
-            // TODO: I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
+            __dataTableHeader = "date,time,pos,neg,impedance (ohms),phase (deg)";
+            // I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
             // and let weka/tensorflow deal with sorting out the time and permutation
             dataWriteFile.WriteLine(__dataTableHeader);
         }
@@ -411,43 +435,63 @@ namespace NsfSwitchControl
         private void CollectData(object stateInf)
         {
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
-            if (collectData)
+            if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
             {
                 foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
                 {
                     if (collectData)
                     {
                         swMatCont.Connect(permutation, false);
+                        while (!lcrMeterCont.IsLCRMeterReady()){ };
                         string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
                         Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
                         WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
                     }
                     else
                     {
+                        dataWriteFile.Close();
                         collectionTimer.Dispose();
+                        IsComplete = true;
                         return;
                     }
                 }
                 swMatCont.DisconnectAll();
 
-                // TODO: uncomment once we are have ablation switch groups in 
-                // swMatCont.Connect(ablationSwitchGroups[0]);
-
-                collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
+                if (preAblation)
+                {
+                    swMatCont.Connect(ablationSwitchGroups[0], true);
+                    preAblation = false;
+                    collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
+                }
+                else if (__currentNumberOfSamples < (__totalNumberOfSamples - 1))
+                {
+                    __currentNumberOfSamples++;
+                    swMatCont.Connect(ablationSwitchGroups[0], true);
+                    collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
+                }
+                else
+                {
+                    dataWriteFile.Close();
+                    collectionTimer.Dispose();
+                    IsComplete = true;
+                    return;
+                }
                 return;
             }
             else
             {
+                dataWriteFile.Close();
                 collectionTimer.Dispose();
+                IsComplete = true;
                 return;
             }
         }
 
 
-        // TODO: finish this based on HM8118's format
         private Tuple<string, string> ConvertLcrXallToImpedanceAndPhase(string lcrXallIn)
         {
-            return new Tuple<string, string>("", "");
+            string[] splitString = lcrXallIn.Split(',');
+            return new Tuple<string, string>(splitString[0], splitString[1]);
         }
 
 
@@ -455,7 +499,7 @@ namespace NsfSwitchControl
         {
             string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
             string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
-            string posCode = permutation["PostiveCode"][0];
+            string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
             dataWriteFile.WriteLine(currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase);
         }
@@ -592,7 +636,6 @@ namespace NsfSwitchControl
 
     public class TemperatureMeasurementController
     {
-        // TODO: Maybe sync with the impedance reader so a temperature reading occurs the same time as a impedance measurement 
         private AnalogMultiChannelReader analogInReader;
         private AsyncCallback myAsyncCallback;
         private NationalInstruments.DAQmx.Task myTask;
