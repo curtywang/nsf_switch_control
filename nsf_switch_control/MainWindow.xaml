@@ -48,11 +48,17 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
-            <Label x:Name="labelControllerStatus" Content="Uninitialized" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" Margin="25,0,0,0" IsEnabled="False" />
+            <WrapPanel Grid.Row="0" Grid.Column="0">
+                <Label x:Name="__titleImpMeasIntervalDesired" Content="Impedance Measurement Interval (secs):" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="120000" VerticalAlignment="Center" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="0" Grid.Column="1" Margin="25,0,0,0">
+                <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelControllerStatus" Content="Uninitialized" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False" />
+            </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="0">
                 <Label x:Name="__titleTimeDesired" Content="Desired Time (min):" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <TextBox x:Name="textboxTimeDesired" Width="Auto" Grid.Row="1" Grid.Column="1" Text="15" VerticalAlignment="Center" />
+                <TextBox x:Name="textboxTimeDesired" Width="Auto" Text="15" VerticalAlignment="Center" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />

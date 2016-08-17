@@ -28,19 +28,14 @@ namespace NsfSwitchControl
     {
         private TemperatureMeasurementController tempMeasCont;
         private LcrMeterController lcrMeterCont;
-        private SwitchMatrixController swCont;
         private System.Windows.Threading.DispatcherTimer elapsedTimer;
         private DateTime startDateTime;
         private ImpedanceMeasurementController impMeasCont;
-        private List<Dictionary<string, List<string>>> measurementPermutations;
-        private List<Dictionary<string, List<string>>> ablationPermutations;
 
         public MainWindow()
         {
             InitializeComponent();
             CheckHardwareStatus();
-            impMeasCont = new ImpedanceMeasurementController();
-            //InitializeControllers();
         }
 
 
@@ -84,12 +79,15 @@ namespace NsfSwitchControl
                 labelImpedanceConnectionStatus.Content = "Problem with HM8118 VISA";
                 labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
             }
+            lcrMeterCont = null;
         }
 
 
         private void InitializeSwitchAndTemperatureControllers(string saveFileLocationFolder)
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
+            int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
+            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, saveFileLocation);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
         }
 
@@ -127,14 +125,12 @@ namespace NsfSwitchControl
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
             tempMeasCont.StartMeasurement();
+            impMeasCont.StartCollection();
             startDateTime = DateTime.Now;
             elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
             {
                 labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
             }, this.Dispatcher);
-
-            // TODO: dispatcher timer for asking the ImpedanceMeasurementController to collect data, which then calls to set ablation after and resets timer
-
             buttonStartCollection.IsEnabled = false;
             buttonStopCollection.IsEnabled = true;
             labelControllerStatus.Content = "Running...";
@@ -144,6 +140,7 @@ namespace NsfSwitchControl
         private void buttonStopCollection_Click(object sender, RoutedEventArgs e)
         {
             tempMeasCont.StopMeasurement();
+            impMeasCont.StopCollection();
             elapsedTimer.IsEnabled = false;
             buttonStopCollection.IsEnabled = false;
             buttonFlushSystem.IsEnabled = true;
@@ -164,10 +161,6 @@ namespace NsfSwitchControl
     public class SwitchMatrixController
     {
         private NISwitch switchSession;
-        private List<Dictionary<string,List<string>>> impedanceSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
-        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
-        private int impedanceCounter = 0;
-        private int ablationCounter = 0;
 
         static private string __switchAddress = "PXI1Slot2";
         static private string __switchTopology = "2529/2-Wire 4x32 Matrix";
@@ -178,14 +171,13 @@ namespace NsfSwitchControl
         static private string __rfGeneratorSwitch = "c31";
         static private PrecisionTimeSpan maxTime = new PrecisionTimeSpan(5);
 
-        public SwitchMatrixController(List<Dictionary<string, List<string>>> impGroups, List<Dictionary<string, List<string>>> ablGroups)
+        public SwitchMatrixController()
         {
             try
             {
                 switchSession = new NISwitch(__switchAddress, __switchTopology, false, true);
                 switchSession.DriverOperation.Warning += new System.EventHandler<SwitchWarningEventArgs>(DriverOperationWarning);
-                impedanceSwitchGroups = impGroups;
-                ablationSwitchGroups = ablGroups;
+                switchSession.Path.DisconnectAll();
             }
             catch (Exception ex)
             {
@@ -194,80 +186,57 @@ namespace NsfSwitchControl
             }
         }
 
-
-        public Dictionary<string, List<string>> GetNextImpedancePermutation()
+        ~SwitchMatrixController()
         {
-            if (impedanceCounter + 1 >= impedanceSwitchGroups.Count)
-                return impedanceSwitchGroups[0];
-            return impedanceSwitchGroups[impedanceCounter + 1];
+            DisconnectAll();
         }
 
 
-        public bool UseNextImpedancePermutation()
+        public void DisconnectAll()
+        {
+            switchSession.Path.DisconnectAll();
+        }
+
+
+        public bool Connect(Dictionary<string, List<string>> switchList, bool ablation)
         {
             try
             {
                 switchSession.Path.DisconnectAll();
-                ++impedanceCounter;
-                if (impedanceCounter >= impedanceSwitchGroups.Count)
-                    impedanceCounter = 0;
-                string connectionList = "";
-                foreach (string channel in impedanceSwitchGroups[impedanceCounter]["Positive"])
+                string posTerminal, negTerminal;
+
+                if (ablation)
                 {
-                    connectionList += __lcrMeterPositive + "->" + channel + ",";
+                    posTerminal = __rfGeneratorPositive;
+                    negTerminal = __rfGeneratorNegative;
                 }
+                else
+                {
+                    posTerminal = __lcrMeterPositive;
+                    negTerminal = __lcrMeterNegative;
+                }
+                string connectionList = "";
+                foreach (string channel in switchList["Positive"])
+                {
+                    connectionList += posTerminal + "->" + channel + ",";
+                }
+                connectionList = connectionList.Remove(connectionList.Length - 1);
                 switchSession.Path.ConnectMultiple(connectionList);
                 connectionList = "";
-                foreach (string channel in impedanceSwitchGroups[impedanceCounter]["Negative"])
+                foreach (string channel in switchList["Negative"])
                 {
-                    connectionList += __lcrMeterNegative + "->" + channel + ",";
+                    connectionList += negTerminal + "->" + channel + ",";
                 }
+                connectionList = connectionList.Remove(connectionList.Length - 1);
                 switchSession.Path.ConnectMultiple(connectionList);
-                // Wait for any relay to activate and debounce.
                 switchSession.Path.WaitForDebounce(maxTime);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "SwitchMatrixController.UseNextImpedancePermutation() failure");
-                return false;
-            }
-        }
 
-
-        public Dictionary<string, List<string>> GetNextAblationPermutation()
-        {
-            if (ablationCounter + 1 >= ablationSwitchGroups.Count)
-                return ablationSwitchGroups[0];
-            return ablationSwitchGroups[ablationCounter + 1];
-        }
-
-
-        public bool UseNextAblationPermutation()
-        {
-            try
-            {
-                switchSession.Path.DisconnectAll();
-                ++ablationCounter;
-                if (ablationCounter >= ablationSwitchGroups.Count)
-                    ablationCounter = 0;
-                string connectionList = "";
-                foreach (string channel in ablationSwitchGroups[impedanceCounter]["Positive"])
+                if (ablation)
                 {
-                    connectionList += __rfGeneratorPositive + "->" + channel + ",";
+                    // connect c31 to __rfGeneratorNegative to turn it all on
+                    switchSession.Path.Connect(__rfGeneratorNegative, __rfGeneratorSwitch);
+                    switchSession.Path.WaitForDebounce(maxTime);
                 }
-                switchSession.Path.ConnectMultiple(connectionList);
-                connectionList = "";
-                foreach (string channel in ablationSwitchGroups[impedanceCounter]["Negative"])
-                {
-                    connectionList += __rfGeneratorNegative + "->" + channel + ",";
-                }
-                switchSession.Path.ConnectMultiple(connectionList);
-                // Wait for any relay to activate and debounce.
-                switchSession.Path.WaitForDebounce(maxTime);
-                // connect c31 to __rfGeneratorNegative to turn it all on
-                switchSession.Path.Connect(__rfGeneratorNegative, __rfGeneratorSwitch);
-                switchSession.Path.WaitForDebounce(maxTime);
 
                 return true;
             }
@@ -306,12 +275,18 @@ namespace NsfSwitchControl
     public class ImpedanceMeasurementController
     {
         private System.IO.StreamWriter dataWriteFile;
-        private List<Dictionary<string, List<string>>> impedanceSwitchGroups; // TODO: groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
-        private List<Dictionary<string, List<string>>> ablationSwitchGroups; // TODO: groups to wire together, either single pairs, dual pairs, or full sides; 21 on device, 4 external
+        private List<Dictionary<string, List<string>>> impedanceSwitchGroups;
+        private List<Dictionary<string, List<string>>> ablationSwitchGroups;
         private SwitchMatrixController swMatCont;
+        private LcrMeterController lcrMeterCont;
 
+        // multithreading handles
+        private System.Threading.Timer collectionTimer;
+        private System.Threading.TimerCallback collectCallback;
+        private bool collectData = false;
 
         static private string __dataTableHeader;
+        static private int __measurementInterval; 
         static private List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
         static private List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
         static private List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
@@ -326,9 +301,13 @@ namespace NsfSwitchControl
         static private List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
 
 
-        public ImpedanceMeasurementController()
+        public ImpedanceMeasurementController(int measurementInterval, string saveFileLocation)
         {
+            __measurementInterval = measurementInterval;
+            lcrMeterCont = new LcrMeterController();
+
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
+            // external impedance measurement permutations
             foreach (string extCode in __externalElectrodes)
             {
                 foreach (string intCode in __internalElectrodes)
@@ -336,9 +315,31 @@ namespace NsfSwitchControl
                     impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
                 }
             }
+            // internal impedance measurement permutations
+            List<string> alreadyUsed = new List<string>();
+            foreach (string intCode1 in __internalElectrodes.Skip(1))
+            {
+                foreach (string intCode2 in __internalElectrodes.Skip(1))
+                {
+                    if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
+                    {
+                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
+                    }
+                }
+                alreadyUsed.Add(intCode1);
+            }
 
+            // TODO: get me some ablation groups yeah? maybe we start with every-two?
             ablationSwitchGroups = new List<Dictionary<string, List<string>>>();
-            swMatCont = new SwitchMatrixController(impedanceSwitchGroups, ablationSwitchGroups);
+
+            swMatCont = new SwitchMatrixController();
+            collectCallback = new System.Threading.TimerCallback(CollectData);
+
+            dataWriteFile = new System.IO.StreamWriter(saveFileLocation + ".impedance.csv");
+            __dataTableHeader = "date,time,pos,neg,impedance,phase";
+            // TODO: I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
+            // and let weka/tensorflow deal with sorting out the time and permutation
+            dataWriteFile.WriteLine(__dataTableHeader);
         }
 
 
@@ -379,15 +380,89 @@ namespace NsfSwitchControl
         {
             List<string> posColumns = ConvertFaceCodeToColumns(posCode);
             List<string> negColumns = ConvertFaceCodeToColumns(negCode);
-            Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { { "Positive", posColumns}, {"Negative", negColumns } };
+            Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { {"PositiveCode", new List<string>{ posCode } },
+                { "Positive", posColumns}, { "NegativeCode", new List<string> { negCode } }, { "Negative", negColumns } };
             return returnDict;
         }
 
 
-        // TODO: Loop through the impedance measurement groups and then write its impedance value to file with timestamp
-        private bool CollectImpedanceMeasurements()
+        public bool StartCollection()
         {
+            collectData = true;
+            collectionTimer = new System.Threading.Timer(collectCallback, this, 0, System.Threading.Timeout.Infinite);
             return false;
+        }
+
+
+        public bool StopCollection()
+        {
+            collectData = false;
+            swMatCont.DisconnectAll();
+            return false;
+        }
+
+
+        private void CollectData(object stateInf)
+        {
+            collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+            if (collectData)
+            {
+                foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
+                {
+                    if (collectData)
+                    {
+                        swMatCont.Connect(permutation, false);
+                        string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
+                        Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
+                        WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                    }
+                    else
+                    {
+                        collectionTimer.Dispose();
+                        return;
+                    }
+                }
+                swMatCont.DisconnectAll();
+
+                // TODO: uncomment once we are have ablation switch groups in 
+                // swMatCont.Connect(ablationSwitchGroups[0]);
+
+                collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
+                return;
+            }
+            else
+            {
+                collectionTimer.Dispose();
+                return;
+            }
+        }
+
+
+        // TODO: finish this based on HM8118's format
+        private Tuple<string, string> ConvertLcrXallToImpedanceAndPhase(string lcrXallIn)
+        {
+            return new Tuple<string, string>("", "");
+        }
+
+
+        private void WritePermutationImpedanceToFile(Dictionary<string, List<string>> permutation, string impedance, string phase)
+        {
+            string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+            string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
+            string posCode = permutation["PostiveCode"][0];
+            string negCode = permutation["NegativeCode"][0];
+            dataWriteFile.WriteLine(currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase);
+        }
+
+
+        private string ListStringToString(List<string> listString)
+        {
+            string output = "";
+            foreach (string str in listString)
+            {
+                output += str + ",";
+            }
+            return output;
         }
 
     }
