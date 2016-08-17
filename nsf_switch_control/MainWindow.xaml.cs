@@ -555,6 +555,11 @@ namespace NsfSwitchControl
                 MessageBox.Show(ex.Message, "GetZThetaValue() Failure");
                 return "";
             }
+            catch (System.NullReferenceException ex)
+            {
+                MessageBox.Show(ex.Message, "LCR Meter connection failure!");
+                return "";
+            }
         }
 
 
