@@ -52,6 +52,7 @@ namespace NsfSwitchControl
             {
                 labelSwitchConnectionStatus.Content = "Problem with PXIe-2529 128-Connection";
                 labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+                buttonInitializeControllers.IsEnabled = false;
             }
 
             // check for DAQs, which should be temperature system
@@ -65,6 +66,7 @@ namespace NsfSwitchControl
             {
                 labelTemperatureConnectionStatus.Content = "Problem with PXIe-4357 20-Channel";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+                buttonInitializeControllers.IsEnabled = false;
             }
 
             // check for HM8118 via NI-VISA *IDN?\r command
@@ -78,6 +80,7 @@ namespace NsfSwitchControl
             {
                 labelImpedanceConnectionStatus.Content = "Problem with HM8118 VISA";
                 labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Red);
+                buttonInitializeControllers.IsEnabled = false;
             }
             lcrMeterCont = null;
         }
