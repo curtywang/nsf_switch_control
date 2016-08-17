@@ -75,7 +75,7 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="200"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="buttonInitializeControllers" Content="Initialize" Grid.Row="0" Grid.Column="0" Margin="50,0" Click="buttonInitializeControllers_Click" />
+            <Button x:Name="buttonInitializeControllers" Content="Initialize" Grid.Row="0" Grid.Column="0" IsEnabled="False" Margin="50,0" Click="buttonInitializeControllers_Click" />
             <Button x:Name="buttonStartCollection" Content="Start Collection" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" Click="buttonStartCollection_Click" />
             <Button x:Name="buttonStopCollection" Content="Stop Collection" Grid.Row="0" Grid.Column="2" IsEnabled="False" Margin="50,0" Click="buttonStopCollection_Click" />
             <Button x:Name="buttonFlushSystem" Content="Flush System" Grid.Row="0" Grid.Column="3" IsEnabled="False" Margin="50,0" Click="buttonFlushSystem_Click" />

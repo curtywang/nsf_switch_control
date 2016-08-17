@@ -47,6 +47,7 @@ namespace NsfSwitchControl
             {
                 labelSwitchConnectionStatus.Content = "PXIe-2529 128-Connection OK";
                 labelSwitchConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+                buttonInitializeControllers.IsEnabled = true;
             }
             else
             {
@@ -61,6 +62,7 @@ namespace NsfSwitchControl
             {
                 labelTemperatureConnectionStatus.Content = "PXIe-4357 20-Channel OK";
                 labelTemperatureConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+                buttonInitializeControllers.IsEnabled = true;
             }
             else
             {
@@ -75,6 +77,7 @@ namespace NsfSwitchControl
             {
                 labelImpedanceConnectionStatus.Content = "HM8118 VISA OK";
                 labelImpedanceConnectionStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Green);
+                buttonInitializeControllers.IsEnabled = true;
             }
             else
             {
