@@ -112,15 +112,16 @@ namespace NsfSwitchControl
         {
             try
             {
-                if (textboxFolderPath.Text != "")
+                if (textboxFolderPath.Text != "" && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
                 {
                     InitializeSwitchAndTemperatureControllers(textboxFolderPath.Text);
                     buttonInitializeControllers.IsEnabled = false;
                     buttonStartCollection.IsEnabled = true;
                     labelControllerStatus.Content = "Initialized";
+                    labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Black);
                 }
                 else
-                    System.Windows.MessageBox.Show("You forgot to choose a path!");
+                    System.Windows.MessageBox.Show("You forgot to choose a path or the number of samples is less than 2!");
             }
             catch (Exception ex)
             {
