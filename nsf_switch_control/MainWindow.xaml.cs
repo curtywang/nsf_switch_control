@@ -822,9 +822,9 @@ namespace NsfSwitchControl
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
-                    __datatableTemperature.Rows.Add(dataRow);
 
-                    // TODO: update datagrid bindings
+                    __datatableTemperature.Rows.Add(dataRow);
+                    mainRef.addLineToTemperatureBox(__datatableTemperature);
                 }
             }
             catch (System.DataMisalignedException dmex)
