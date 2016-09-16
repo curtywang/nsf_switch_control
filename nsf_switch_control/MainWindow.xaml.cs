@@ -35,6 +35,9 @@ namespace NsfSwitchControl
         private ImpedanceMeasurementController impMeasCont;
         private delegate void TextBoxUpdateDelegate(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid);
 
+        private string __dtImpName;
+        private string __dtTempName;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -183,18 +186,38 @@ namespace NsfSwitchControl
 
         public void addLineToImpedanceBox(DataTable dtForGrid)
         {
-            datagridImpedance.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridImpedance);
+            if (__dtImpName != dtForGrid.TableName)
+            {
+                __dtImpName = dtForGrid.TableName;
+                datagridImpedance.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridImpedance);
+            }
+            else
+            {
+                datagridImpedance.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(scrollDatagrid), dtForGrid, datagridImpedance);
+            }
         }
 
         public void addLineToTemperatureBox(DataTable dtForGrid)
         {
-            datagridTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridTemperature);
+            if (__dtTempName != dtForGrid.TableName)
+            {
+                __dtTempName = dtForGrid.TableName;
+                datagridTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridTemperature);
+            }
+            else
+            {
+                datagridTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(scrollDatagrid), dtForGrid, datagridTemperature);
+            }
         }
 
         private void rebindDatagrid(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid)
         {
             theDataGrid.ItemsSource = dtForGrid.DefaultView;
             theDataGrid.AutoGenerateColumns = true;
+        }
+
+        private void scrollDatagrid(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid)
+        {
             int count = theDataGrid.Items.Count;
             if (theDataGrid.Items.Count > 0)
                 theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
