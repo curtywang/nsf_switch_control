@@ -29,6 +29,8 @@ namespace NsfSwitchControl
         private TemperatureMeasurementController tempMeasCont;
         private LcrMeterController lcrMeterCont;
         private System.Windows.Threading.DispatcherTimer elapsedTimer;
+        private System.Windows.Threading.DispatcherTimer fileRefreshTimer;
+        private const int fileRefreshIntervalSeconds = 5;
         private DateTime startDateTime;
         private ImpedanceMeasurementController impMeasCont;
 
@@ -94,7 +96,7 @@ namespace NsfSwitchControl
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
             int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
-            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation);
+            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation, this);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
         }
 
@@ -176,6 +178,16 @@ namespace NsfSwitchControl
             buttonInitializeControllers.IsEnabled = true;
             buttonFlushSystem.IsEnabled = false;
             labelControllerStatus.Content = "Flushed";
+        }
+
+        public void addLineToImpedanceBox(string inLine)
+        {
+            textboxImpedance.Text += inLine;
+        }
+
+        public void addLineToTemperatureBox(string inLine)
+        {
+            textboxTemperature.Text += inLine;
         }
     }
 
@@ -327,8 +339,10 @@ namespace NsfSwitchControl
         static private readonly List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
         static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
 
+        private MainWindow mainRef;
 
-        public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation)
+
+        public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation, MainWindow mainRefIn)
         {
             __totalNumberOfSamples = sampleTotal;
             __currentNumberOfSamples = 0;
@@ -385,6 +399,8 @@ namespace NsfSwitchControl
             // I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
             // and let weka/tensorflow deal with sorting out the time and permutation
             dataWriteFile.WriteLine(__dataTableHeader);
+
+            mainRef = mainRefIn;
         }
 
 
@@ -516,7 +532,9 @@ namespace NsfSwitchControl
             string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
             string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
-            dataWriteFile.WriteLine(currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase);
+            string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
+            dataWriteFile.WriteLine(lineToWrite);
+            mainRef.addLineToTemperatureBox(lineToWrite);
         }
 
 
