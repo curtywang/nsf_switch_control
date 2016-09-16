@@ -218,6 +218,7 @@ namespace NsfSwitchControl
 
         private void scrollDatagrid(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid)
         {
+            theDataGrid.Items.Refresh();
             int count = theDataGrid.Items.Count;
             if (theDataGrid.Items.Count > 0)
                 theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
