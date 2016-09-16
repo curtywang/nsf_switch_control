@@ -195,8 +195,9 @@ namespace NsfSwitchControl
         {
             theDataGrid.ItemsSource = dtForGrid.DefaultView;
             theDataGrid.AutoGenerateColumns = true;
-            //theDataGrid.IsReadOnly = true;
-            theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
+            int count = theDataGrid.Items.Count;
+            if (theDataGrid.Items.Count > 0)
+                theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
         }
     }
 
@@ -806,7 +807,7 @@ namespace NsfSwitchControl
                 string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
                 DataRow dataRow = __datatableTemperature.NewRow();
                 dataRow[0] = currentDate;
-                dataRow[1] = currentDate;
+                dataRow[1] = currentTime;
 
                 // assume sourceArray has channels in the original order
                 foreach (int sample in Enumerable.Range(0, __samplesPerChannelBeforeRelease))
