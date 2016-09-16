@@ -416,6 +416,7 @@ namespace NsfSwitchControl
             dataWriteFile.WriteLine(__dataTableHeader);
 
             mainRef = mainRefIn;
+            mainRef.addLineToImpedanceBox(__datatableImpedance);
             //mainRef.addLineToImpedanceBox(__dataTableHeader);
         }
 
