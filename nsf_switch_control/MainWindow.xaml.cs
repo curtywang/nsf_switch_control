@@ -346,7 +346,7 @@ namespace NsfSwitchControl
         }
     }
 
-    
+
     public class ImpedanceMeasurementController
     {
         private System.IO.StreamWriter dataWriteFile;
@@ -379,6 +379,74 @@ namespace NsfSwitchControl
         static private readonly List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
         static private readonly List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
         static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
+        // for top and bottom faces
+        static private readonly List<string> __topBottomRingElectrodes = new List<string> { "N", "E", "S", "W" };
+        static private readonly List<string> __northEastElectrodes = new List<string> { "N", "E" };
+        static private readonly List<string> __northWestElectrodes = new List<string> { "N", "W" };
+        static private readonly List<string> __southEastElectrodes = new List<string> { "S", "E" };
+        static private readonly List<string> __southWestElectrodes = new List<string> { "S", "W" };
+        static private readonly List<string> __northEastSouthElectrodes = new List<string> { "N", "E", "S" }; 
+        static private readonly List<string> __eastSouthWestElectrodes = new List<string> { "E", "S", "W" };
+        static private readonly List<string> __SouthWestNorthElectrodes = new List<string> { "S", "W", "N" };
+        static private readonly List<List<string>> __adjacentToB = new List<List<string>> {
+            __topBottomRingElectrodes,
+            __northEastElectrodes,
+            __northWestElectrodes,
+            __southEastElectrodes,
+            __southWestElectrodes,
+            __northEastSouthElectrodes,
+            __eastSouthWestElectrodes,
+            __SouthWestNorthElectrodes };
+        static private readonly List<List<string>> __adjacentToT = __adjacentToB; 
+
+        // for north and south faces 
+        static private readonly List<string> __northSouthRingElectrodes = new List<string> { "T", "E", "B", "W" };
+        static private readonly List<string> __topEastElectrodes = new List<string> { "T", "E" };
+        static private readonly List<string> __topWestElectrodes = new List<string> { "T", "W" };
+        static private readonly List<string> __bottomEastElectrodes = new List<string> { "B", "W" };
+        static private readonly List<string> __bottomestElectrodes = new List<string> { "B", "W" };
+        static private readonly List<string> __topEastBottomElectrodes = new List<string> { "T", "E", "B" };
+        static private readonly List<string> __eastBottomWestElectrodes = new List<string> { "E", "B", "W" };
+        static private readonly List<string> __bottomWestTopElectrodes = new List<string> { "B", "W", "T" };
+        static private readonly List<List<string>> __adjacentToN = new List<List<string>> {
+            __northSouthRingElectrodes,
+            __topEastElectrodes,
+            __topWestElectrodes,
+            __bottomEastElectrodes,
+            __bottomestElectrodes,
+            __topEastBottomElectrodes,
+            __eastBottomWestElectrodes,
+            __bottomWestTopElectrodes };
+        static private readonly List<List<string>> __adjacentToS = __adjacentToN;
+
+        // for east and west faces 
+        static private readonly List<string> __eastWestRingElectrodes = new List<string> { "T", "N", "B", "S" };
+        static private readonly List<string> __topNorthElectrodes = new List<string> { "T", "N" };
+        static private readonly List<string> __topSouthElectrodes = new List<string> { "T", "S" };
+        static private readonly List<string> __bottomNorthElectrodes = new List<string> { "B", "N" };
+        static private readonly List<string> __bottomSouthElectrodes = new List<string> { "B", "S" };
+        static private readonly List<string> __topNorthBottomElectrodes = new List<string> { "T", "N", "B" };
+        static private readonly List<string> __northBottomSouthElectrodes = new List<string> { "N", "B", "S" };
+        static private readonly List<string> __bottomSouthTopElectrodes = new List<string> { "B", "S", "T" };
+        static private readonly List<List<string>> __adjacentToE = new List<List<string>> {
+            __eastWestRingElectrodes,
+            __topNorthElectrodes,
+            __topSouthElectrodes,
+            __bottomNorthElectrodes,
+            __bottomSouthElectrodes,
+            __topNorthBottomElectrodes,
+            __northBottomSouthElectrodes,
+            __bottomSouthTopElectrodes };
+        static private readonly List<List<string>> __adjacentToW = __adjacentToE;
+        static private readonly List<Tuple<List<List<string>>, string>> __allAdjacentGroups = new List<Tuple<List<List<string>>, string>> {
+            new Tuple<List<List<string>>, string> (__adjacentToB, "B"),
+            new Tuple<List<List<string>>, string> (__adjacentToT, "T"),
+            new Tuple<List<List<string>>, string> (__adjacentToN, "N"),
+            new Tuple<List<List<string>>, string> (__adjacentToS, "S"),
+            new Tuple<List<List<string>>, string> (__adjacentToE, "E"),
+            new Tuple<List<List<string>>, string> (__adjacentToW, "W"),
+            };
+
 
         private MainWindow mainRef;
         private DataTable __datatableImpedance = new DataTable("impedance");
@@ -415,7 +483,7 @@ namespace NsfSwitchControl
             // internal-to-internal impedance measurement permutations
             //List<string> alreadyUsed = new List<string>();
             alreadyUsed.Clear();
-            foreach (string intCode1 in __internalElectrodes.Skip(1))
+            foreach (string intCode1 in __internalElectrodes.Skip(1)) // skipped 1 b/c "all internal" is first element
             {
                 foreach (string intCode2 in __internalElectrodes.Skip(1))
                 {
@@ -425,6 +493,15 @@ namespace NsfSwitchControl
                     }
                 }
                 alreadyUsed.Add(intCode1);
+            }
+
+            // adjacent internal-to-internal impedance measurement permutations 
+            foreach (Tuple<List<List<string>>, string> adjTuple in __allAdjacentGroups)
+            {
+                foreach (List<string> adjList in adjTuple.Item1)
+                {
+                    ConvertPositiveNegativeFaceCodeToPermutation(adjList, adjTuple.Item2);
+                }
             }
 
             ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
@@ -494,6 +571,23 @@ namespace NsfSwitchControl
             return returnDict;
         }
 
+        private Dictionary<string, List<string>> ConvertPositiveNegativeFaceCodeToPermutation(List<string> posCodes, string negCode)
+        {
+            string combined_name = "";
+            foreach (string face_name in posCodes)
+            {
+                combined_name += face_name;
+            }
+            List<string> posColumns = new List<string> { };
+            foreach (string posCode in posCodes)
+            {
+                posColumns.Concat(ConvertFaceCodeToColumns(posCode));
+            }
+            List<string> negColumns = ConvertFaceCodeToColumns(negCode);
+            Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { {"PositiveCode", posCodes },
+                { "Positive", posColumns}, { "NegativeCode", new List<string> { negCode } }, { "Negative", negColumns } };
+            return returnDict;
+        }
 
         public bool StartCollection()
         {
@@ -578,7 +672,12 @@ namespace NsfSwitchControl
         {
             string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
             string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
-            string posCode = permutation["PositiveCode"][0];
+            string posCode = "";
+            foreach (string code in permutation["PositiveCode"])
+            {
+                posCode += code + ", ";
+            }
+            //string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
             dataWriteFile.WriteLine(lineToWrite);
