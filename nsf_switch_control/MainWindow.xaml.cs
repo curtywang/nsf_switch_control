@@ -195,7 +195,8 @@ namespace NsfSwitchControl
         {
             theDataGrid.ItemsSource = dtForGrid.DefaultView;
             theDataGrid.AutoGenerateColumns = true;
-            theDataGrid.IsReadOnly = true;
+            //theDataGrid.IsReadOnly = true;
+            theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
         }
     }
 
@@ -816,7 +817,7 @@ namespace NsfSwitchControl
                     foreach (int channel in __channelsToUse)
                     {
                         sampleData[channel] = sourceArray[channel].Samples[sample].Value;
-                        dataRow[channel.ToString()] = sourceArray[channel].Samples[sample].Value;
+                        dataRow[channel.ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);

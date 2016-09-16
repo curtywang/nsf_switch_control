@@ -58,7 +58,7 @@
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="0">
                 <Label x:Name="__titleImpMeasSamplesDesired" Content="Desired Number of Imp. Measurements:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="" VerticalAlignment="Center" />
+                <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="10" VerticalAlignment="Center" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />
@@ -88,8 +88,8 @@
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="2*" />
             </Grid.ColumnDefinitions>
-            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsEnabled="False" Margin="50,0" MaxWidth="300" MaxHeight="300" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
-            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" MaxWidth="300" MaxHeight="300" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsReadOnly="True" Margin="50,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsReadOnly="True" Margin="50,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
         </Grid>
     </StackPanel>
 </Window>
