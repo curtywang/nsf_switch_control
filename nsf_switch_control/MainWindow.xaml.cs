@@ -184,14 +184,14 @@ namespace NsfSwitchControl
     {
         private NISwitch switchSession;
 
-        static private string __switchAddress = "PXI1Slot6";
-        static private string __switchTopology = "2529/2-Wire 4x32 Matrix";
-        static private string __lcrMeterPositive = "r0";
-        static private string __lcrMeterNegative = "r1";
-        static private string __rfGeneratorPositive = "r2";
-        static private string __rfGeneratorNegative = "r3";
-        static private string __rfGeneratorSwitch = "c31";
-        static private PrecisionTimeSpan maxTime = new PrecisionTimeSpan(50.0);
+        private const string __switchAddress = "PXI1Slot6";
+        private const string __switchTopology = "2529/2-Wire 4x32 Matrix";
+        private const string __lcrMeterPositive = "r0";
+        private const string __lcrMeterNegative = "r1";
+        private const string __rfGeneratorPositive = "r2";
+        private const string __rfGeneratorNegative = "r3";
+        private const string __rfGeneratorSwitch = "c31";
+        private readonly PrecisionTimeSpan maxTime = new PrecisionTimeSpan(50.0);
 
         public SwitchMatrixController()
         {
@@ -312,20 +312,20 @@ namespace NsfSwitchControl
         private int __totalNumberOfSamples;
         private int __currentNumberOfSamples;
         private string __dataTableHeader;
-        static private int __preAblationMilliseconds = 5000; // TODO: change this if needed
-        static private int __measurementInterval;
-        static private List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
-        static private List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
-        static private List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
-        static private List<string> __groupW = new List<string> { "c12", "c13", "c14", "c15" };
-        static private List<string> __groupB = new List<string> { "c16", "c17", "c18", "c19" };
-        static private List<string> __groupT = new List<string> { "c20" };
-        static private List<string> __groupX = new List<string> { "c25" };
-        static private List<string> __groupY = new List<string> { "c26" };
-        static private List<string> __groupZ = new List<string> { "c27" };
-        static private List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
-        static private List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
-        static private List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
+        private const int __preAblationMilliseconds = 5000; // TODO: change this if needed
+        private int __measurementInterval;
+        static private readonly List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
+        static private readonly List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
+        static private readonly List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
+        static private readonly List<string> __groupW = new List<string> { "c12", "c13", "c14", "c15" };
+        static private readonly List<string> __groupB = new List<string> { "c16", "c17", "c18", "c19" };
+        static private readonly List<string> __groupT = new List<string> { "c20" };
+        static private readonly List<string> __groupX = new List<string> { "c25" };
+        static private readonly List<string> __groupY = new List<string> { "c26" };
+        static private readonly List<string> __groupZ = new List<string> { "c27" };
+        static private readonly List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
+        static private readonly List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
+        static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
 
 
         public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation)
@@ -374,7 +374,7 @@ namespace NsfSwitchControl
 
             ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
                 { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19", "c31" } } // c31 is the generator sense line
+                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
             } };
 
             swMatCont = new SwitchMatrixController();
@@ -539,9 +539,9 @@ namespace NsfSwitchControl
         private NationalInstruments.Visa.MessageBasedSession mbSession;
         public bool IsEnabled;
 
-        static private string __lcrMeterPort = "ASRL3::INSTR";
-        static private int __lcrFrequency = 100000;
-        static private string __termchar = "\r";
+        private const string __lcrMeterPort = "ASRL3::INSTR";
+        private const int __lcrFrequency = 100000;
+        private const string __termchar = "\r";
 
         public LcrMeterController()
         {
@@ -659,23 +659,23 @@ namespace NsfSwitchControl
         private System.IO.StreamWriter dataWriteFile;
 
         // RTD physical configuration
-        static private List<int> __channelsToUse = new List<int>(Enumerable.Range(0, 20)); // use all of the channels
-        static private string __pxiLocation = "PXI1Slot2";
-        static private AIRtdType __rtdType = AIRtdType.Pt3851;
-        static private double __r0Numeric = 100.0;
-        static private AIResistanceConfiguration __resistanceConfiguration = AIResistanceConfiguration.ThreeWire;
-        static private AIExcitationSource __excitationSource = AIExcitationSource.Internal;
-        static private double __minimumValueNumeric = 0.0;
-        static private double __maximumValueNumeric = 200.0;
-        static private AITemperatureUnits __temperatureUnit = AITemperatureUnits.DegreesC;
-        static private double __currentExcitationNumeric = 900e-6;
+        private readonly List<int> __channelsToUse = new List<int>(Enumerable.Range(0, 20)); // use all of the channels
+        private const string __pxiLocation = "PXI1Slot2";
+        private readonly AIRtdType __rtdType = AIRtdType.Pt3851;
+        private const double __r0Numeric = 100.0;
+        private readonly AIResistanceConfiguration __resistanceConfiguration = AIResistanceConfiguration.ThreeWire;
+        private readonly AIExcitationSource __excitationSource = AIExcitationSource.Internal;
+        private readonly double __minimumValueNumeric = 0.0;
+        private readonly double __maximumValueNumeric = 200.0;
+        private readonly AITemperatureUnits __temperatureUnit = AITemperatureUnits.DegreesC;
+        private readonly double __currentExcitationNumeric = 900e-6;
 
         // Sampling configuration
-        static private double __sampleRate = 2.0; // in Hz
-        static private int __samplesPerChannelBeforeRelease = 1;
+        private const double __sampleRate = 2.0; // in Hz
+        private const int __samplesPerChannelBeforeRelease = 1;
 
         // Data table configuration
-        static private string __dataTableHeader; 
+        private string __dataTableHeader; 
 
 
         public TemperatureMeasurementController(string saveFileLocation)
