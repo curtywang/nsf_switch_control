@@ -406,6 +406,11 @@ namespace NsfSwitchControl
 
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation + ".impedance.csv");
             __dataTableHeader = "date,time,pos,neg,impedance (ohms),phase (deg)";
+
+            foreach (string col in __dataTableHeader.Split(','))
+            {
+                __datatableImpedance.Columns.Add(col);
+            }
             // I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
             // and let weka/tensorflow deal with sorting out the time and permutation
             dataWriteFile.WriteLine(__dataTableHeader);
@@ -545,7 +550,16 @@ namespace NsfSwitchControl
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
             dataWriteFile.WriteLine(lineToWrite);
-            //mainRef.addLineToImpedanceBox(lineToWrite);
+
+            DataRow dataRow = __datatableImpedance.NewRow();
+            dataRow[0] = currentDate;
+            dataRow[1] = currentTime;
+            dataRow[2] = posCode;
+            dataRow[3] = negCode;
+            dataRow[4] = impedance;
+            dataRow[5] = phase;
+            __datatableImpedance.Rows.Add(dataRow);
+            mainRef.addLineToImpedanceBox(__datatableImpedance);
         }
 
 
