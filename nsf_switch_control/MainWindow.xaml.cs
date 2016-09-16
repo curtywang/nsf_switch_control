@@ -238,7 +238,14 @@ namespace NsfSwitchControl
 
         public void DisconnectAll()
         {
-            switchSession.Path.DisconnectAll();
+            try
+            {
+                switchSession.Path.DisconnectAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "DisconnectAll() Error!");
+            }
         }
 
 
