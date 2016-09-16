@@ -98,7 +98,7 @@ namespace NsfSwitchControl
             int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
             int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
             impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation, this);
-            tempMeasCont = new TemperatureMeasurementController(saveFileLocation);
+            tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
         }
 
 
@@ -185,12 +185,11 @@ namespace NsfSwitchControl
 
         public void addLineToImpedanceBox(string inLine)
         {
-            textboxImpedance.Text += inLine;
+            textboxTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(addLineToBox), inLine, textboxImpedance);
         }
 
         public void addLineToTemperatureBox(string inLine)
         {
-            //textboxTemperature.Text += inLine;
             textboxTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(addLineToBox), inLine, textboxTemperature);
         }
 
@@ -413,6 +412,7 @@ namespace NsfSwitchControl
             dataWriteFile.WriteLine(__dataTableHeader);
 
             mainRef = mainRefIn;
+            mainRef.addLineToImpedanceBox(__dataTableHeader);
         }
 
 
@@ -546,7 +546,7 @@ namespace NsfSwitchControl
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
             dataWriteFile.WriteLine(lineToWrite);
-            mainRef.addLineToTemperatureBox(lineToWrite);
+            mainRef.addLineToImpedanceBox(lineToWrite);
         }
 
 
@@ -705,10 +705,12 @@ namespace NsfSwitchControl
         private const int __samplesPerChannelBeforeRelease = 1;
 
         // Data table configuration
-        private string __dataTableHeader; 
+        private string __dataTableHeader;
+
+        private MainWindow mainRef;
 
 
-        public TemperatureMeasurementController(string saveFileLocation)
+        public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
             // the USB daq uses "cDAQ1Mod1/aiX" as its location
             foreach (int channelId in __channelsToUse)
@@ -716,6 +718,8 @@ namespace NsfSwitchControl
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
+            mainRef = mainRefIn;
+            mainRef.addLineToTemperatureBox(__dataTableHeader);
         }
 
 
@@ -808,6 +812,7 @@ namespace NsfSwitchControl
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
+                    mainRef.addLineToTemperatureBox(currentLine);
                 }
             }
             catch (System.DataMisalignedException dmex)
