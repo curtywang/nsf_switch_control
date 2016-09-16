@@ -88,8 +88,8 @@
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="2*" />
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="textboxImpedance" Grid.Row="0" Grid.Column="0" IsEnabled="False" AcceptsReturn="True" Margin="50,0" MinLines="10" TextWrapping="Wrap" MinWidth="200" />
-            <TextBox x:Name="textboxTemperature" Grid.Row="0" Grid.Column="1" IsEnabled="False" AcceptsReturn="True" Margin="50,0" MinLines="10" TextWrapping="Wrap" MinWidth="200" />
+            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsEnabled="False" Margin="50,0"/>
+            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" MinWidth="200" />
         </Grid>
     </StackPanel>
 </Window>

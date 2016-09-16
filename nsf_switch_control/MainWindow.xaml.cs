@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Data;
 using System.Windows;
 
 using NationalInstruments;
@@ -29,11 +30,10 @@ namespace NsfSwitchControl
         private TemperatureMeasurementController tempMeasCont;
         private LcrMeterController lcrMeterCont;
         private System.Windows.Threading.DispatcherTimer elapsedTimer;
-        private System.Windows.Threading.DispatcherTimer fileRefreshTimer;
         private const int fileRefreshIntervalSeconds = 5;
         private DateTime startDateTime;
         private ImpedanceMeasurementController impMeasCont;
-        private delegate void TextBoxUpdateDelegate(string inLine, System.Windows.Controls.TextBox theTextbox);
+        private delegate void TextBoxUpdateDelegate(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid);
 
         public MainWindow()
         {
@@ -122,8 +122,6 @@ namespace NsfSwitchControl
                     buttonStartCollection.IsEnabled = true;
                     labelControllerStatus.Content = "Initialized";
                     labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Black);
-                    textboxTemperature.Text = "";
-                    textboxImpedance.Text = "";
                 }
                 else
                     System.Windows.MessageBox.Show("You forgot to choose a path or the number of samples is less than 2!");
@@ -183,22 +181,21 @@ namespace NsfSwitchControl
             labelControllerStatus.Content = "Flushed";
         }
 
-        public void addLineToImpedanceBox(string inLine)
+        public void addLineToImpedanceBox(DataTable dtForGrid)
         {
-            textboxTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(addLineToBox), inLine, textboxImpedance);
+            datagridImpedance.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridImpedance);
         }
 
-        public void addLineToTemperatureBox(string inLine)
+        public void addLineToTemperatureBox(DataTable dtForGrid)
         {
-            textboxTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(addLineToBox), inLine, textboxTemperature);
+            datagridTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(rebindDatagrid), dtForGrid, datagridTemperature);
         }
 
-        private void addLineToBox(string inLine, System.Windows.Controls.TextBox theTextbox)
+        private void rebindDatagrid(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid)
         {
-            theTextbox.AppendText(inLine);
-            theTextbox.Focus();
-            theTextbox.CaretIndex = theTextbox.Text.Length;
-            theTextbox.ScrollToEnd();
+            theDataGrid.ItemsSource = dtForGrid.DefaultView;
+            theDataGrid.AutoGenerateColumns = true;
+            theDataGrid.IsReadOnly = true;
         }
     }
 
@@ -351,7 +348,7 @@ namespace NsfSwitchControl
         static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
 
         private MainWindow mainRef;
-
+        private DataTable __datatableImpedance = new DataTable("impedance");
 
         public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation, MainWindow mainRefIn)
         {
@@ -412,7 +409,7 @@ namespace NsfSwitchControl
             dataWriteFile.WriteLine(__dataTableHeader);
 
             mainRef = mainRefIn;
-            mainRef.addLineToImpedanceBox(__dataTableHeader);
+            //mainRef.addLineToImpedanceBox(__dataTableHeader);
         }
 
 
@@ -546,7 +543,7 @@ namespace NsfSwitchControl
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
             dataWriteFile.WriteLine(lineToWrite);
-            mainRef.addLineToImpedanceBox(lineToWrite);
+            //mainRef.addLineToImpedanceBox(lineToWrite);
         }
 
 
@@ -708,18 +705,24 @@ namespace NsfSwitchControl
         private string __dataTableHeader;
 
         private MainWindow mainRef;
+        private DataTable __datatableTemperature = new DataTable("temperature");
 
 
         public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
             // the USB daq uses "cDAQ1Mod1/aiX" as its location
+            __datatableTemperature.Columns.Add("Date");
+            __datatableTemperature.Columns.Add("Time");
             foreach (int channelId in __channelsToUse)
+            {
                 channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
+                __datatableTemperature.Columns.Add(channelId.ToString());
+            }
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
             mainRef = mainRefIn;
-            mainRef.addLineToTemperatureBox(__dataTableHeader);
+            mainRef.addLineToTemperatureBox(__datatableTemperature);
         }
 
 
@@ -800,19 +803,26 @@ namespace NsfSwitchControl
 
                 string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
                 string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
+                DataRow dataRow = __datatableTemperature.NewRow();
+                dataRow[0] = currentDate;
+                dataRow[1] = currentDate;
 
                 // assume sourceArray has channels in the original order
                 foreach (int sample in Enumerable.Range(0, __samplesPerChannelBeforeRelease))
                 {
                     string currentLine = currentDate + "," + currentTime + ",";
                     double[] sampleData = new double[__channelsToUse.Count];
+                    
                     foreach (int channel in __channelsToUse)
                     {
                         sampleData[channel] = sourceArray[channel].Samples[sample].Value;
+                        dataRow[channel.ToString()] = sourceArray[channel].Samples[sample].Value;
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
-                    mainRef.addLineToTemperatureBox(currentLine);
+                    __datatableTemperature.Rows.Add(dataRow);
+
+                    // TODO: update datagrid bindings
                 }
             }
             catch (System.DataMisalignedException dmex)
