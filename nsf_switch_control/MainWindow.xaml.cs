@@ -500,7 +500,7 @@ namespace NsfSwitchControl
             {
                 foreach (List<string> adjList in adjTuple.Item1)
                 {
-                    ConvertPositiveNegativeFaceCodeToPermutation(adjList, adjTuple.Item2);
+                    impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(adjList, adjTuple.Item2));
                 }
             }
 
