@@ -33,6 +33,7 @@ namespace NsfSwitchControl
         private const int fileRefreshIntervalSeconds = 5;
         private DateTime startDateTime;
         private ImpedanceMeasurementController impMeasCont;
+        private delegate void TextBoxUpdateDelegate(string inLine, System.Windows.Controls.TextBox theTextbox);
 
         public MainWindow()
         {
@@ -187,7 +188,13 @@ namespace NsfSwitchControl
 
         public void addLineToTemperatureBox(string inLine)
         {
-            textboxTemperature.Text += inLine;
+            //textboxTemperature.Text += inLine;
+            textboxTemperature.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, new TextBoxUpdateDelegate(addLineToBox), inLine, textboxTemperature);
+        }
+
+        private void addLineToBox(string inLine, System.Windows.Controls.TextBox theTextbox)
+        {
+            theTextbox.Text += inLine;
         }
     }
 
