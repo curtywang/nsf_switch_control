@@ -122,6 +122,8 @@ namespace NsfSwitchControl
                     buttonStartCollection.IsEnabled = true;
                     labelControllerStatus.Content = "Initialized";
                     labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Black);
+                    textboxTemperature.Text = "";
+                    textboxImpedance.Text = "";
                 }
                 else
                     System.Windows.MessageBox.Show("You forgot to choose a path or the number of samples is less than 2!");
@@ -194,7 +196,10 @@ namespace NsfSwitchControl
 
         private void addLineToBox(string inLine, System.Windows.Controls.TextBox theTextbox)
         {
-            theTextbox.Text += inLine;
+            theTextbox.AppendText(inLine);
+            theTextbox.Focus();
+            theTextbox.CaretIndex = theTextbox.Text.Length;
+            theTextbox.ScrollToEnd();
         }
     }
 
