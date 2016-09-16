@@ -573,15 +573,10 @@ namespace NsfSwitchControl
 
         private Dictionary<string, List<string>> ConvertPositiveNegativeFaceCodeToPermutation(List<string> posCodes, string negCode)
         {
-            string combined_name = "";
-            foreach (string face_name in posCodes)
-            {
-                combined_name += face_name;
-            }
-            List<string> posColumns = new List<string> { };
+            List<string> posColumns = new List<string>();
             foreach (string posCode in posCodes)
             {
-                posColumns.Concat(ConvertFaceCodeToColumns(posCode));
+                posColumns.AddRange(ConvertFaceCodeToColumns(posCode));
             }
             List<string> negColumns = ConvertFaceCodeToColumns(negCode);
             Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { {"PositiveCode", posCodes },
@@ -672,11 +667,7 @@ namespace NsfSwitchControl
         {
             string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
             string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
-            string posCode = "";
-            foreach (string code in permutation["PositiveCode"])
-            {
-                posCode += code + ", ";
-            }
+            string posCode = String.Join(", ", permutation["PositiveCode"]);
             //string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
