@@ -184,14 +184,14 @@ namespace NsfSwitchControl
     {
         private NISwitch switchSession;
 
-        static private string __switchAddress = "PXI1Slot2";
+        static private string __switchAddress = "PXI1Slot6";
         static private string __switchTopology = "2529/2-Wire 4x32 Matrix";
         static private string __lcrMeterPositive = "r0";
         static private string __lcrMeterNegative = "r1";
         static private string __rfGeneratorPositive = "r2";
         static private string __rfGeneratorNegative = "r3";
         static private string __rfGeneratorSwitch = "c31";
-        static private PrecisionTimeSpan maxTime = new PrecisionTimeSpan(5);
+        static private PrecisionTimeSpan maxTime = new PrecisionTimeSpan(50.0);
 
         public SwitchMatrixController()
         {
@@ -320,9 +320,9 @@ namespace NsfSwitchControl
         static private List<string> __groupW = new List<string> { "c12", "c13", "c14", "c15" };
         static private List<string> __groupB = new List<string> { "c16", "c17", "c18", "c19" };
         static private List<string> __groupT = new List<string> { "c20" };
-        static private List<string> __groupX = new List<string> { "c21" };
-        static private List<string> __groupY = new List<string> { "c22" };
-        static private List<string> __groupZ = new List<string> { "c23" };
+        static private List<string> __groupX = new List<string> { "c25" };
+        static private List<string> __groupY = new List<string> { "c26" };
+        static private List<string> __groupZ = new List<string> { "c27" };
         static private List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
         static private List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
         static private List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
@@ -336,7 +336,7 @@ namespace NsfSwitchControl
             lcrMeterCont = new LcrMeterController();
 
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
-            // external impedance measurement permutations
+            // external-to-internal impedance measurement permutations
             foreach (string extCode in __externalElectrodes)
             {
                 foreach (string intCode in __internalElectrodes)
@@ -344,8 +344,22 @@ namespace NsfSwitchControl
                     impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
                 }
             }
-            // internal impedance measurement permutations
+            // external-to-external impedance measurement permutations
             List<string> alreadyUsed = new List<string>();
+            foreach (string extCode1 in __externalElectrodes)
+            {
+                foreach (string extCode2 in __externalElectrodes)
+                {
+                    if ((extCode1 != extCode2) && (alreadyUsed.Contains(extCode2) == false))
+                    {
+                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(extCode1, extCode2));
+                    }
+                }
+                alreadyUsed.Add(extCode1);
+            }
+            // internal-to-internal impedance measurement permutations
+            //List<string> alreadyUsed = new List<string>();
+            alreadyUsed.Clear();
             foreach (string intCode1 in __internalElectrodes.Skip(1))
             {
                 foreach (string intCode2 in __internalElectrodes.Skip(1))
@@ -525,7 +539,7 @@ namespace NsfSwitchControl
         private NationalInstruments.Visa.MessageBasedSession mbSession;
         public bool IsEnabled;
 
-        static private string __lcrMeterPort = "ASRL5::INSTR";
+        static private string __lcrMeterPort = "ASRL3::INSTR";
         static private int __lcrFrequency = 100000;
         static private string __termchar = "\r";
 
@@ -646,7 +660,7 @@ namespace NsfSwitchControl
 
         // RTD physical configuration
         static private List<int> __channelsToUse = new List<int>(Enumerable.Range(0, 20)); // use all of the channels
-        static private string __pxiLocation = "PXI1Slot3";
+        static private string __pxiLocation = "PXI1Slot2";
         static private AIRtdType __rtdType = AIRtdType.Pt3851;
         static private double __r0Numeric = 100.0;
         static private AIResistanceConfiguration __resistanceConfiguration = AIResistanceConfiguration.ThreeWire;
