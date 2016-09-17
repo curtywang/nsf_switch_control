@@ -845,21 +845,26 @@ namespace NsfSwitchControl
         private MainWindow mainRef;
         private DataTable __datatableTemperature = new DataTable("temperature");
 
-        private readonly List<int> __stickN = new List<int> { 0,5,10,15 };
-        private readonly List<int> __stickE = new List<int> { 1,6,11,16 };
-        private readonly List<int> __stickS = new List<int> { 2,7,12,17 };
-        private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
-        private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
+        static private readonly List<int> __stickN = new List<int> { 0,5,10,15 };
+        static private readonly List<int> __stickE = new List<int> { 1,6,11,16 };
+        static private readonly List<int> __stickS = new List<int> { 2,7,12,17 };
+        static private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
+        static private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
+        static private readonly List<List<int>> __sticksToMeasure = new List<List<int>> { __stickN, __stickE, __stickS, __stickW, __stickB };
 
         public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
             // the USB daq uses "cDAQ1Mod1/aiX" as its location
             __datatableTemperature.Columns.Add("Date");
             __datatableTemperature.Columns.Add("Time");
-            foreach (int channelId in __channelsToUse)
+            //foreach (int channelId in __channelsToUse)
+            foreach (List<int> stickList in __sticksToMeasure)
             {
-                channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
-                __datatableTemperature.Columns.Add(ConvertChannelIdToFace(channelId) + channelId.ToString());
+                foreach (int channelId in stickList)
+                {
+                    channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
+                    __datatableTemperature.Columns.Add(ConvertChannelIdToFace(channelId) + channelId.ToString());
+                }
             }
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
