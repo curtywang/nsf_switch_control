@@ -88,8 +88,8 @@
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="2*" />
             </Grid.ColumnDefinitions>
-            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsReadOnly="True" Margin="10,0" Width="Auto" Height="Auto" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
-            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsReadOnly="True" Margin="10,0" Width="Auto" Height="Auto" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
         </Grid>
     </StackPanel>
 </Window>
