@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Data;
 using System.Windows;
+using System.Windows.Data;
 
 using NationalInstruments;
 using NationalInstruments.ModularInstruments.NISwitch;
@@ -218,10 +219,17 @@ namespace NsfSwitchControl
 
         private void scrollDatagrid(DataTable dtForGrid, System.Windows.Controls.DataGrid theDataGrid)
         {
-            theDataGrid.Items.Refresh();
-            int count = theDataGrid.Items.Count;
-            if (theDataGrid.Items.Count > 0)
-                theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
+            try
+            {
+                theDataGrid.Items.Refresh();
+                int count = theDataGrid.Items.Count;
+                if (theDataGrid.Items.Count > 0)
+                    theDataGrid.ScrollIntoView(theDataGrid.Items.GetItemAt(theDataGrid.Items.Count - 1));
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message, "datagrid problem!");
+            }
         }
     }
 
@@ -361,6 +369,7 @@ namespace NsfSwitchControl
         private bool collectData = false;
         public bool IsComplete = false;
         private bool preAblation = true;
+        public static object _syncLock = new object();
 
         private int __totalNumberOfSamples;
         private int __currentNumberOfSamples;
@@ -523,6 +532,8 @@ namespace NsfSwitchControl
             // and let weka/tensorflow deal with sorting out the time and permutation
             dataWriteFile.WriteLine(__dataTableHeader);
 
+            BindingOperations.EnableCollectionSynchronization(__datatableImpedance.DefaultView, _syncLock);
+
             mainRef = mainRefIn;
             mainRef.addLineToImpedanceBox(__datatableImpedance);
             //mainRef.addLineToImpedanceBox(__dataTableHeader);
@@ -680,7 +691,11 @@ namespace NsfSwitchControl
             dataRow[3] = negCode;
             dataRow[4] = impedance;
             dataRow[5] = phase;
-            __datatableImpedance.Rows.Add(dataRow);
+
+            lock (_syncLock)
+            {
+                __datatableImpedance.Rows.Add(dataRow);
+            }
             mainRef.addLineToImpedanceBox(__datatableImpedance);
         }
 
@@ -823,6 +838,8 @@ namespace NsfSwitchControl
         private List<string> channelsToUseAddresses = new List<string>();
         private System.IO.StreamWriter dataWriteFile;
 
+        public static object _syncLock = new object();
+
         // RTD physical configuration
         private const string __pxiLocation = "PXI1Slot2";
         private readonly AIRtdType __rtdType = AIRtdType.Pt3851;
@@ -869,6 +886,9 @@ namespace NsfSwitchControl
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
+
+            BindingOperations.EnableCollectionSynchronization(__datatableTemperature.DefaultView, _syncLock);
+
             mainRef = mainRefIn;
             mainRef.addLineToTemperatureBox(__datatableTemperature);
         }
@@ -1000,7 +1020,10 @@ namespace NsfSwitchControl
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
 
-                    __datatableTemperature.Rows.Add(dataRow);
+                    lock (_syncLock)
+                    {
+                        __datatableTemperature.Rows.Add(dataRow);
+                    }
                     mainRef.addLineToTemperatureBox(__datatableTemperature);
                 }
             }
