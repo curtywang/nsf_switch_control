@@ -824,7 +824,6 @@ namespace NsfSwitchControl
         private System.IO.StreamWriter dataWriteFile;
 
         // RTD physical configuration
-        private readonly List<int> __channelsToUse = new List<int>(Enumerable.Range(0, 20)); // use all of the channels
         private const string __pxiLocation = "PXI1Slot2";
         private readonly AIRtdType __rtdType = AIRtdType.Pt3851;
         private const double __r0Numeric = 100.0;
@@ -851,6 +850,7 @@ namespace NsfSwitchControl
         static private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
         static private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
         static private readonly List<List<int>> __sticksToMeasure = new List<List<int>> { __stickN, __stickE, __stickS, __stickW, __stickB };
+        static private readonly List<int> __channelsToUse = __sticksToMeasure.SelectMany(x => x).ToList();
 
         public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
@@ -989,7 +989,7 @@ namespace NsfSwitchControl
                     string currentLine = currentDate + "," + currentTime + ",";
                     double[] sampleData = new double[__channelsToUse.Count];
                     
-                    foreach (int channel in __channelsToUse)
+                    foreach (int channel in __channelsToUse) // sampleData is in direct order, sourceArray is in added order
                     {
                         sampleData[channel] = sourceArray[channel].Samples[sample].Value;
                         dataRow[ConvertChannelIdToFace(channel)+channel.ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
