@@ -403,8 +403,8 @@ namespace NsfSwitchControl
         static private readonly List<string> __northSouthRingElectrodes = new List<string> { "T", "E", "B", "W" };
         static private readonly List<string> __topEastElectrodes = new List<string> { "T", "E" };
         static private readonly List<string> __topWestElectrodes = new List<string> { "T", "W" };
-        static private readonly List<string> __bottomEastElectrodes = new List<string> { "B", "W" };
-        static private readonly List<string> __bottomestElectrodes = new List<string> { "B", "W" };
+        static private readonly List<string> __bottomEastElectrodes = new List<string> { "B", "E" };
+        static private readonly List<string> __bottomWestElectrodes = new List<string> { "B", "W" };
         static private readonly List<string> __topEastBottomElectrodes = new List<string> { "T", "E", "B" };
         static private readonly List<string> __eastBottomWestElectrodes = new List<string> { "E", "B", "W" };
         static private readonly List<string> __bottomWestTopElectrodes = new List<string> { "B", "W", "T" };
@@ -413,7 +413,7 @@ namespace NsfSwitchControl
             __topEastElectrodes,
             __topWestElectrodes,
             __bottomEastElectrodes,
-            __bottomestElectrodes,
+            __bottomWestElectrodes,
             __topEastBottomElectrodes,
             __eastBottomWestElectrodes,
             __bottomWestTopElectrodes };
