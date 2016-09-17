@@ -992,7 +992,7 @@ namespace NsfSwitchControl
                     foreach (int channel in __channelsToUse)
                     {
                         sampleData[channel] = sourceArray[channel].Samples[sample].Value;
-                        dataRow[channel.ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
+                        dataRow[ConvertChannelIdToFace(channel)+channel.ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
