@@ -667,7 +667,7 @@ namespace NsfSwitchControl
         {
             string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
             string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
-            string posCode = String.Join(", ", permutation["PositiveCode"]);
+            string posCode = String.Join(".", permutation["PositiveCode"]);
             //string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
             string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
@@ -988,11 +988,14 @@ namespace NsfSwitchControl
                 {
                     string currentLine = currentDate + "," + currentTime + ",";
                     double[] sampleData = new double[__channelsToUse.Count];
-                    
-                    foreach (int channel in __channelsToUse) // sampleData is in direct order, sourceArray is in added order
+
+                    // sampleData is in direct order, sourceArray is in added order
+                    // so __channelsToUse is going to be in 0,5,10,15
+                    // but sourceArray is ordered to be the original, so we have to get the actual index
+                    foreach (int channel in Enumerable.Range(0,20)) //__channelsToUse) 
                     {
-                        sampleData[channel] = sourceArray[channel].Samples[sample].Value;
-                        dataRow[ConvertChannelIdToFace(channel)+channel.ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
+                        sampleData[__channelsToUse[channel]] = sourceArray[channel].Samples[sample].Value;
+                        dataRow[ConvertChannelIdToFace(__channelsToUse[channel]) + __channelsToUse[channel].ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");
                     }
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
