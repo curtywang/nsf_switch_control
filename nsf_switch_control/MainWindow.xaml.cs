@@ -578,7 +578,7 @@ namespace NsfSwitchControl
             {
                 combined_name += face_name;
             }
-            List<string> posColumns = new List<string> { };
+            List<string> posColumns = new List<string>();
             foreach (string posCode in posCodes)
             {
                 posColumns.Concat(ConvertFaceCodeToColumns(posCode));
@@ -854,6 +854,11 @@ namespace NsfSwitchControl
         private MainWindow mainRef;
         private DataTable __datatableTemperature = new DataTable("temperature");
 
+        private readonly List<int> __stickN = new List<int> { 0,5,10,15 };
+        private readonly List<int> __stickE = new List<int> { 1,6,11,16 };
+        private readonly List<int> __stickS = new List<int> { 2,7,12,17 };
+        private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
+        private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
 
         public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
@@ -863,7 +868,7 @@ namespace NsfSwitchControl
             foreach (int channelId in __channelsToUse)
             {
                 channelsToUseAddresses.Add(__pxiLocation + "/ai" + channelId.ToString());
-                __datatableTemperature.Columns.Add(channelId.ToString());
+                __datatableTemperature.Columns.Add(ConvertChannelIdToFace(channelId) + channelId.ToString());
             }
             dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
@@ -872,6 +877,34 @@ namespace NsfSwitchControl
             mainRef.addLineToTemperatureBox(__datatableTemperature);
         }
 
+
+        private string ConvertChannelIdToFace(int channelId)
+        {
+            if (__stickN.Contains(channelId))
+            {
+                return "N";
+            }
+            else if (__stickE.Contains(channelId))
+            {
+                return "E";
+            }
+            else if (__stickS.Contains(channelId))
+            {
+                return "S";
+            }
+            else if (__stickW.Contains(channelId))
+            {
+                return "W";
+            }
+            else if (__stickB.Contains(channelId))
+            {
+                return "B";
+            }
+            else
+            {
+                return "?";
+            }
+        }
 
         public void StopMeasurement()
         {
