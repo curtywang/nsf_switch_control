@@ -370,6 +370,7 @@ namespace NsfSwitchControl
         public bool IsComplete = false;
         private bool preAblation = true;
         public static object _syncLock = new object();
+        private DateTime __recordingStartTime;
 
         private int __totalNumberOfSamples;
         private int __currentNumberOfSamples;
@@ -598,6 +599,7 @@ namespace NsfSwitchControl
         public bool StartCollection()
         {
             collectData = true;
+            __recordingStartTime = DateTime.Now;
             collectionTimer = new System.Threading.Timer(collectCallback, this, 0, System.Threading.Timeout.Infinite);
             return false;
         }
@@ -677,7 +679,7 @@ namespace NsfSwitchControl
         private void WritePermutationImpedanceToFile(Dictionary<string, List<string>> permutation, string impedance, string phase)
         {
             string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-            string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
+            string currentTime = (DateTime.Now - __recordingStartTime).TotalSeconds.ToString(); //DateTime.Now.ToString("hh:mm:ss.fff");
             string posCode = String.Join(".", permutation["PositiveCode"]);
             //string posCode = permutation["PositiveCode"][0];
             string negCode = permutation["NegativeCode"][0];
@@ -857,7 +859,7 @@ namespace NsfSwitchControl
 
         // Data table configuration
         private string __dataTableHeader;
-
+        private DateTime __recordingStartTime;
         private MainWindow mainRef;
         private DataTable __datatableTemperature = new DataTable("temperature");
 
@@ -957,6 +959,8 @@ namespace NsfSwitchControl
                 analogInReader = new AnalogMultiChannelReader(myTask.Stream);
                 runningTask = myTask;
 
+                __recordingStartTime = DateTime.Now;
+
                 // Use SynchronizeCallbacks to specify that the object 
                 // marshals callbacks across threads appropriately.
                 analogInReader.SynchronizeCallbacks = true;
@@ -998,7 +1002,7 @@ namespace NsfSwitchControl
                     throw new System.DataMisalignedException("Error: the incoming data has a different size than the number of channels!");
 
                 string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
-                string currentTime = DateTime.Now.ToString("hh:mm:ss.fff");
+                string currentTime = (DateTime.Now - __recordingStartTime).TotalSeconds.ToString();
                 DataRow dataRow = __datatableTemperature.NewRow();
                 dataRow[0] = currentDate;
                 dataRow[1] = currentTime;
