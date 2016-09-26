@@ -515,8 +515,9 @@ namespace NsfSwitchControl
             }
 
             ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+                { "Positive", new List<string> { "c0", "c1", "c2", "c3", } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14",
+                    "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
             } };
 
             swMatCont = new SwitchMatrixController();
@@ -795,7 +796,13 @@ namespace NsfSwitchControl
             try
             {
                 mbSession.RawIO.Write("XALL?" + __termchar);
-                return (mbSession.RawIO.ReadString());
+                string garbage = mbSession.RawIO.ReadString();
+                while (garbage == "ERROR" + __termchar)
+                {
+                    mbSession.RawIO.Write("XALL?" + __termchar);
+                    garbage = mbSession.RawIO.ReadString();
+                }
+                return garbage;
             }
             catch (Ivi.Visa.IOTimeoutException ex)
             {

@@ -82,14 +82,14 @@
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>
-                <RowDefinition Height="0.4*"/>
+                <RowDefinition Height="2*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="3*" />
             </Grid.ColumnDefinitions>
-            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
-            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="400" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridImpedance" Grid.Row="0" Grid.Column="0" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="450" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
+            <DataGrid x:Name="datagridTemperature" Grid.Row="0" Grid.Column="1" IsReadOnly="True" Margin="10,0" Width="Auto" MaxHeight="450" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Visible" ScrollViewer.VerticalScrollBarVisibility="Visible" />
         </Grid>
     </StackPanel>
 </Window>
