@@ -144,7 +144,7 @@ namespace NsfSwitchControl
             startDateTime = DateTime.Now;
             elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
             {
-                labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss");
+                labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Counts Taken: " + impMeasCont.SamplesTaken().ToString();
                 if (impMeasCont.IsComplete)
                     StopCollection(true);
             }, this.Dispatcher);
@@ -383,11 +383,12 @@ namespace NsfSwitchControl
         static private readonly List<string> __groupW = new List<string> { "c12", "c13", "c14", "c15" };
         static private readonly List<string> __groupB = new List<string> { "c16", "c17", "c18", "c19" };
         static private readonly List<string> __groupT = new List<string> { "c20" };
-        static private readonly List<string> __groupX = new List<string> { "c25" };
-        static private readonly List<string> __groupY = new List<string> { "c26" };
-        static private readonly List<string> __groupZ = new List<string> { "c27" };
+        static private readonly List<string> __groupENE = new List<string> { "c24" };
+        static private readonly List<string> __groupENW = new List<string> { "c25" };
+        static private readonly List<string> __groupESE = new List<string> { "c26" };
+        static private readonly List<string> __groupESW = new List<string> { "c27" };
         static private readonly List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
-        static private readonly List<string> __externalElectrodes = new List<string> { "X", "Y", "Z" };
+        static private readonly List<string> __externalElectrodes = new List<string> { "ENE", "ENW", "ESE", "ESW" };
         static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
         // for top and bottom faces
         static private readonly List<string> __topBottomRingElectrodes = new List<string> { "N", "E", "S", "W" };
@@ -514,11 +515,28 @@ namespace NsfSwitchControl
                 }
             }
 
-            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+
+            // North-only
+            /* ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
                 { "Positive", new List<string> { "c0", "c1", "c2", "c3", } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
                 { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14",
                     "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } };
+            } }; */
+
+            // East-only
+            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+                { "Positive", new List<string> { "c4", "c5", "c6", "c7" } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3", "c12", "c13", "c14",
+                    "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } }; 
+
+            /*
+            // All electrodes (every two)
+            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+                { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } }; 
+            */
 
             swMatCont = new SwitchMatrixController();
             collectCallback = new System.Threading.TimerCallback(CollectData);
@@ -559,12 +577,14 @@ namespace NsfSwitchControl
                     return __groupB;
                 case "T":
                     return __groupT;
-                case "X":
-                    return __groupX;
-                case "Y":
-                    return __groupY;
-                case "Z":
-                    return __groupZ;
+                case "ENE":
+                    return __groupENE;
+                case "ENW":
+                    return __groupENW;
+                case "ESE":
+                    return __groupESE;
+                case "ESW":
+                    return __groupESW;
                 case "AllInternal":
                     return __groupAllInternal;
                 default:
@@ -611,6 +631,12 @@ namespace NsfSwitchControl
             collectData = false;
             swMatCont.DisconnectAll();
             return false;
+        }
+
+
+        public int SamplesTaken()
+        {
+            return __currentNumberOfSamples;
         }
 
 
