@@ -401,13 +401,14 @@ namespace NsfSwitchControl
         static private readonly List<string> __SouthWestNorthElectrodes = new List<string> { "S", "W", "N" };
         static private readonly List<List<string>> __adjacentToB = new List<List<string>> {
             __topBottomRingElectrodes,
-            __northEastElectrodes,
-            __northWestElectrodes,
-            __southEastElectrodes,
-            __southWestElectrodes,
-            __northEastSouthElectrodes,
-            __eastSouthWestElectrodes,
-            __SouthWestNorthElectrodes };
+            //__northEastElectrodes,
+            //__northWestElectrodes,
+            //__southEastElectrodes,
+            //__southWestElectrodes,
+            //__northEastSouthElectrodes,
+            //__eastSouthWestElectrodes,
+            //__SouthWestNorthElectrodes
+        };
         static private readonly List<List<string>> __adjacentToT = __adjacentToB; 
 
         // for north and south faces 
@@ -421,13 +422,14 @@ namespace NsfSwitchControl
         static private readonly List<string> __bottomWestTopElectrodes = new List<string> { "B", "W", "T" };
         static private readonly List<List<string>> __adjacentToN = new List<List<string>> {
             __northSouthRingElectrodes,
-            __topEastElectrodes,
-            __topWestElectrodes,
-            __bottomEastElectrodes,
-            __bottomWestElectrodes,
-            __topEastBottomElectrodes,
-            __eastBottomWestElectrodes,
-            __bottomWestTopElectrodes };
+            //__topEastElectrodes,
+            //__topWestElectrodes,
+            //__bottomEastElectrodes,
+            //__bottomWestElectrodes,
+            //__topEastBottomElectrodes,
+            //__eastBottomWestElectrodes,
+            //__bottomWestTopElectrodes
+        };
         static private readonly List<List<string>> __adjacentToS = __adjacentToN;
 
         // for east and west faces 
@@ -441,13 +443,14 @@ namespace NsfSwitchControl
         static private readonly List<string> __bottomSouthTopElectrodes = new List<string> { "B", "S", "T" };
         static private readonly List<List<string>> __adjacentToE = new List<List<string>> {
             __eastWestRingElectrodes,
-            __topNorthElectrodes,
-            __topSouthElectrodes,
-            __bottomNorthElectrodes,
-            __bottomSouthElectrodes,
-            __topNorthBottomElectrodes,
-            __northBottomSouthElectrodes,
-            __bottomSouthTopElectrodes };
+            //__topNorthElectrodes,
+            //__topSouthElectrodes,
+            //__bottomNorthElectrodes,
+            //__bottomSouthElectrodes,
+            //__topNorthBottomElectrodes,
+            //__northBottomSouthElectrodes,
+            //__bottomSouthTopElectrodes
+        };
         static private readonly List<List<string>> __adjacentToW = __adjacentToE;
         static private readonly List<Tuple<List<List<string>>, string>> __allAdjacentGroups = new List<Tuple<List<List<string>>, string>> {
             new Tuple<List<List<string>>, string> (__adjacentToB, "B"),
