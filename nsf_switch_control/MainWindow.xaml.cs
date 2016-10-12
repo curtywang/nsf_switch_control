@@ -526,20 +526,32 @@ namespace NsfSwitchControl
                     "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
             } }; */
 
-            // East-only
-            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c4", "c5", "c6", "c7" } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3", "c12", "c13", "c14",
-                    "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } }; 
+            // North-South-only
+            /* ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+                { "Positive", new List<string> { "c0", "c1", "c2", "c3",  "c8", "c9", "c10", "c11"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } }; */
 
-            /*
-            // All electrodes (every two)
+            // East-only
+            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+            //    { "Positive", new List<string> { "c4", "c5", "c6", "c7" } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+            //    { "Negative", new List<string> { "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3", "c12", "c13", "c14",
+            //        "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            //} }; 
+
+            // West-East-only
             ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } }; 
-            */
+                { "Positive", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } };
+
+
+            // All electrodes (every two)
+            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+            //    { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+            //    { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            //} };
+
 
             swMatCont = new SwitchMatrixController();
             collectCallback = new System.Threading.TimerCallback(CollectData);
