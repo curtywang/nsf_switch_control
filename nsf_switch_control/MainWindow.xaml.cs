@@ -389,7 +389,7 @@ namespace NsfSwitchControl
         static private readonly List<string> __groupESW = new List<string> { "c27" };
         static private readonly List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
         static private readonly List<string> __externalElectrodes = new List<string> { "ENE", "ENW", "ESE", "ESW" };
-        static private readonly List<string> __internalElectrodes = new List<string> { "AllInternal", "N", "E", "S", "W", "B", "T" };
+        static private readonly List<string> __internalElectrodes = new List<string> { "N", "E", "S", "W", "B", "T" };
         // for top and bottom faces
         static private readonly List<string> __topBottomRingElectrodes = new List<string> { "N", "E", "S", "W" };
         static private readonly List<string> __northEastElectrodes = new List<string> { "N", "E" };
@@ -483,17 +483,17 @@ namespace NsfSwitchControl
             }
             // external-to-external impedance measurement permutations
             List<string> alreadyUsed = new List<string>();
-            foreach (string extCode1 in __externalElectrodes)
-            {
-                foreach (string extCode2 in __externalElectrodes)
-                {
-                    if ((extCode1 != extCode2) && (alreadyUsed.Contains(extCode2) == false))
-                    {
-                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(extCode1, extCode2));
-                    }
-                }
-                alreadyUsed.Add(extCode1);
-            }
+            //foreach (string extCode1 in __externalElectrodes)
+            //{
+            //    foreach (string extCode2 in __externalElectrodes)
+            //    {
+            //        if ((extCode1 != extCode2) && (alreadyUsed.Contains(extCode2) == false))
+            //        {
+            //            impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(extCode1, extCode2));
+            //        }
+            //    }
+            //    alreadyUsed.Add(extCode1);
+            //}
             // internal-to-internal impedance measurement permutations
             //List<string> alreadyUsed = new List<string>();
             alreadyUsed.Clear();
@@ -537,14 +537,34 @@ namespace NsfSwitchControl
             //    { "Positive", new List<string> { "c4", "c5", "c6", "c7" } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
             //    { "Negative", new List<string> { "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3", "c12", "c13", "c14",
             //        "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} }; 
+            //} };
+
+            //West - only
+            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+            //    { "Positive", new List<string> { "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+            //    { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3",
+            //        "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            //} };
 
             // West-East-only
-            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } };
+            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+            //    { "Positive", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+            //    { "Negative", new List<string> { "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            //} };
 
+            //// South-West-only
+            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+            //    { "Positive", new List<string> { "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+            //    { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c0", "c1", "c2", "c3",
+            //        "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            //} };
+
+            //// South-only
+            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
+                { "Positive", new List<string> { "c8", "c9", "c10", "c11",} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
+                { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c0", "c1", "c2", "c3", "c12", "c13", "c14", "c15",
+                    "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
+            } };
 
             // All electrodes (every two)
             //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
