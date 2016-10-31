@@ -103,6 +103,8 @@ namespace NsfSwitchControl
             int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
             impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation, this);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
+            listBoxMeasElectrodesPositive.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
+            listBoxMeasElectrodesNegative.ItemsSource = impMeasCont.GetMeasurementElectrodesNegative();
         }
 
 
@@ -139,6 +141,9 @@ namespace NsfSwitchControl
 
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
+            impMeasCont.SetMeasurementCombinations(listBoxMeasElectrodesPositive.SelectedItems.OfType<string>().ToList(), listBoxMeasElectrodesNegative.SelectedItems.OfType<string>().ToList());
+            impMeasCont.SetAblationSides(listBoxAblationSides.SelectedItems.OfType<string>().ToList());
+
             tempMeasCont.StartMeasurement();
             impMeasCont.StartCollection();
             startDateTime = DateTime.Now;
@@ -368,6 +373,7 @@ namespace NsfSwitchControl
         private System.Threading.TimerCallback collectCallback;
         private bool collectData = false;
         public bool IsComplete = false;
+        private bool inAblations = false;
         private bool preAblation = true;
         public static object _syncLock = new object();
         private DateTime __recordingStartTime;
@@ -377,6 +383,8 @@ namespace NsfSwitchControl
         private string __dataTableHeader;
         private const int __preAblationMilliseconds = 5000; // TODO: change this if needed
         private int __measurementInterval;
+        private List<int> ablationPermutationIndices = new List<int>();
+        private Random rseed = new Random();
         static private readonly List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
         static private readonly List<string> __groupE = new List<string> { "c4", "c5", "c6", "c7" };
         static private readonly List<string> __groupS = new List<string> { "c8", "c9", "c10", "c11" };
@@ -481,25 +489,12 @@ namespace NsfSwitchControl
                     impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
                 }
             }
-            // external-to-external impedance measurement permutations
-            List<string> alreadyUsed = new List<string>();
-            //foreach (string extCode1 in __externalElectrodes)
-            //{
-            //    foreach (string extCode2 in __externalElectrodes)
-            //    {
-            //        if ((extCode1 != extCode2) && (alreadyUsed.Contains(extCode2) == false))
-            //        {
-            //            impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(extCode1, extCode2));
-            //        }
-            //    }
-            //    alreadyUsed.Add(extCode1);
-            //}
             // internal-to-internal impedance measurement permutations
-            //List<string> alreadyUsed = new List<string>();
+            List<string> alreadyUsed = new List<string>();
             alreadyUsed.Clear();
-            foreach (string intCode1 in __internalElectrodes.Skip(1)) // skipped 1 b/c "all internal" is first element
+            foreach (string intCode1 in __internalElectrodes)
             {
-                foreach (string intCode2 in __internalElectrodes.Skip(1))
+                foreach (string intCode2 in __internalElectrodes)
                 {
                     if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
                     {
@@ -519,58 +514,12 @@ namespace NsfSwitchControl
             }
 
 
-            // North-only
+            // North-only, only here as an example
             /* ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
                 { "Positive", new List<string> { "c0", "c1", "c2", "c3", } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
                 { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14",
                     "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
             } }; */
-
-            // North-South-only
-            /* ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c0", "c1", "c2", "c3",  "c8", "c9", "c10", "c11"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } }; */
-
-            // East-only
-            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-            //    { "Positive", new List<string> { "c4", "c5", "c6", "c7" } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-            //    { "Negative", new List<string> { "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3", "c12", "c13", "c14",
-            //        "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} };
-
-            //West - only
-            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-            //    { "Positive", new List<string> { "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-            //    { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c8", "c9", "c10", "c11",  "c0", "c1", "c2", "c3",
-            //        "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} };
-
-            // West-East-only
-            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-            //    { "Positive", new List<string> { "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-            //    { "Negative", new List<string> { "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} };
-
-            //// South-West-only
-            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-            //    { "Positive", new List<string> { "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15"} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-            //    { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c0", "c1", "c2", "c3",
-            //        "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} };
-
-            //// South-only
-            ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c8", "c9", "c10", "c11",} }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c4", "c5", "c6", "c7" , "c0", "c1", "c2", "c3", "c12", "c13", "c14", "c15",
-                    "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } };
-
-            // All electrodes (every two)
-            //ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-            //    { "Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-            //    { "Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            //} };
 
 
             swMatCont = new SwitchMatrixController();
@@ -583,15 +532,77 @@ namespace NsfSwitchControl
             {
                 __datatableImpedance.Columns.Add(col);
             }
-            // I'm thinking, maybe just have it be "date, time, pos, neg, impedance, phase"
-            // and let weka/tensorflow deal with sorting out the time and permutation
             dataWriteFile.WriteLine(__dataTableHeader);
 
             BindingOperations.EnableCollectionSynchronization(__datatableImpedance.DefaultView, _syncLock);
 
             mainRef = mainRefIn;
             mainRef.addLineToImpedanceBox(__datatableImpedance);
-            //mainRef.addLineToImpedanceBox(__dataTableHeader);
+        }
+
+
+        public List<string> GetMeasurementElectrodesPositive()
+        {
+            return __internalElectrodes;
+        }
+
+        public List<string> GetMeasurementElectrodesNegative()
+        {
+            return __eastWestRingElectrodes.Concat(__northSouthRingElectrodes).Concat(__topBottomRingElectrodes).Concat(__externalElectrodes).Concat(__internalElectrodes).ToList();
+        }
+
+        public List<string> GetAblationSides()
+        {
+            return __internalElectrodes;
+        }
+
+        // TODO: finish me by adding the correct combos to the impedanceSwitchGroups, not sure how it should work, maybe some logic to prevent overlap?
+        //       or should we just do blind permutations of the set
+        //       or should we give only specific combinations that are allowed?
+        //       maybe we just ask for the sides we want measurements from, and then do logic rules for those sides?
+        // For now, it is just going to be, choose the sides we want to measure from and prune automatically?
+        // or should we just have a "use external electrodes" checkbox.
+        // otherwise: N-TEBW, E-TNBS, S-TEBW, W-TNBS, T-NESW, B-NESW
+        public void SetMeasurementCombinations(List<string> posElectrodes, List<string> negElectrodes)
+        {
+            // internal-to-internal impedance measurement permutations
+            List<string> alreadyUsed = new List<string>();
+            alreadyUsed.Clear();
+            foreach (string intCode1 in __internalElectrodes)
+            {
+                foreach (string intCode2 in __internalElectrodes)
+                {
+                    if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
+                    {
+                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
+                    }
+                }
+                alreadyUsed.Add(intCode1);
+            }
+        }
+
+
+        public void SetAblationSides(List<string> inAblationSides)
+        {
+            // we expect N, E, S, W, B, T
+            foreach (string side_code in inAblationSides)
+            {
+                ablationSwitchGroups.Add(new Dictionary<string, List<string>>{
+                { "Positive", ConvertFaceCodeToColumns(side_code) },
+                { "Negative", GetNegativeElectrodesForPositiveCode(side_code) } });
+            }
+        }
+
+
+        private List<string> GetNegativeElectrodesForPositiveCode(string in_code)
+        {
+            List<string> negativeElectrodeCodes = __internalElectrodes.Where(item => item != in_code).ToList();
+            List<string> outCodes = new List<string>();
+            foreach (string neg_code in negativeElectrodeCodes)
+            {
+                outCodes = outCodes.Concat(ConvertFaceCodeToColumns(neg_code)).ToList();
+            }
+            return outCodes;
         }
 
 
@@ -629,7 +640,7 @@ namespace NsfSwitchControl
 
 
         // generate permutation groups for Positive and Negative based on NESWTBXYZ, like pass in (["N",
-        // TODO: possibly look at multiple faces to one face or something in the future
+        // TODO: (for later) possibly look at multiple faces to one face or something in the future for both pos AND neg, since for now it's either one-to-one or one-to-many
         private Dictionary<string, List<string>> ConvertPositiveNegativeFaceCodeToPermutation(string posCode, string negCode)
         {
             List<string> posColumns = ConvertFaceCodeToColumns(posCode);
@@ -649,6 +660,19 @@ namespace NsfSwitchControl
             List<string> negColumns = ConvertFaceCodeToColumns(negCode);
             Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { {"PositiveCode", posCodes },
                 { "Positive", posColumns}, { "NegativeCode", new List<string> { negCode } }, { "Negative", negColumns } };
+            return returnDict;
+        }
+
+        private Dictionary<string, List<string>> ConvertPositiveNegativeFaceCodeToPermutation(string posCode, List<string> negCodes)
+        {
+            List<string> negColumns = new List<string>();
+            foreach (string negCode in negCodes)
+            {
+                negColumns.AddRange(ConvertFaceCodeToColumns(negCode));
+            }
+            List<string> posColumn = ConvertFaceCodeToColumns(posCode);
+            Dictionary<string, List<string>> returnDict = new Dictionary<string, List<string>> { {"PositiveCode", new List<string> { posCode } },
+                { "Positive", posColumn}, { "NegativeCode",  negCodes }, { "Negative", negColumns } };
             return returnDict;
         }
 
@@ -680,42 +704,63 @@ namespace NsfSwitchControl
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
             {
-                foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
+                if (!inAblations)
                 {
-                    if (collectData)
+                    foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
                     {
-                        swMatCont.Connect(permutation, false);
-                        while (!lcrMeterCont.IsLCRMeterReady()){ };
-                        string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
-                        Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
-                        WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                        if (collectData)
+                        {
+                            swMatCont.Connect(permutation, false);
+                            while (!lcrMeterCont.IsLCRMeterReady()) { };
+                            string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
+                            Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
+                            WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                        }
+                        else
+                        {
+                            dataWriteFile.Close();
+                            collectionTimer.Dispose();
+                            IsComplete = true;
+                            return;
+                        }
                     }
-                    else
+                    swMatCont.DisconnectAll();
+                    __currentNumberOfSamples++;
+                    foreach (int i in Enumerable.Range(0, ablationSwitchGroups.Count).OrderBy(x => rseed.Next()))
                     {
-                        dataWriteFile.Close();
-                        collectionTimer.Dispose();
-                        IsComplete = true;
-                        return;
+                        ablationPermutationIndices.Add(i);
                     }
+                    inAblations = true;
                 }
-                swMatCont.DisconnectAll();
 
-                if (preAblation)
+                else if (preAblation)
                 {
-                    swMatCont.Connect(ablationSwitchGroups[0], true);
-                    preAblation = false;
+                    int indexToUse = ablationPermutationIndices[0];
+                    ablationPermutationIndices.RemoveAt(0);
+                    swMatCont.Connect(ablationSwitchGroups[indexToUse], true);
+                    if (ablationPermutationIndices.Count < 1)
+                    {
+                        preAblation = false;
+                        inAblations = false;
+                    }
                     collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
                 }
-                else if (__currentNumberOfSamples < (__totalNumberOfSamples - 1))
+                else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
                 {
-                    __currentNumberOfSamples++;
-                    swMatCont.Connect(ablationSwitchGroups[0], true);
+                    int indexToUse = ablationPermutationIndices[0];
+                    ablationPermutationIndices.RemoveAt(0);
+                    swMatCont.Connect(ablationSwitchGroups[indexToUse], true);
+                    if (ablationPermutationIndices.Count < 1)
+                    {
+                        inAblations = false;
+                    }
                     collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
                 }
                 else
                 {
                     dataWriteFile.Close();
                     collectionTimer.Dispose();
+                    inAblations = false;
                     IsComplete = true;
                     return;
                 }
@@ -725,6 +770,7 @@ namespace NsfSwitchControl
             {
                 dataWriteFile.Close();
                 collectionTimer.Dispose();
+                inAblations = false;
                 IsComplete = true;
                 return;
             }
