@@ -99,9 +99,7 @@ namespace NsfSwitchControl
         private void InitializeSwitchAndTemperatureControllers(string saveFileLocationFolder)
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
-            int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
-            int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
-            impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation, this);
+            impMeasCont = new ImpedanceMeasurementController(saveFileLocation, this);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
             listBoxAblationSides.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
         }
@@ -140,6 +138,10 @@ namespace NsfSwitchControl
 
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
+            int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
+            int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
+            impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
+            impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
             impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
             impMeasCont.SetAblationSides(listBoxAblationSides.SelectedItems.OfType<string>().ToList());
 
@@ -469,40 +471,27 @@ namespace NsfSwitchControl
             new Tuple<List<List<string>>, string> (__adjacentToW, "W"),
             };
 
-
         private MainWindow mainRef;
         private DataTable __datatableImpedance = new DataTable("impedance");
 
-        public ImpedanceMeasurementController(int measurementInterval, int sampleTotal, string saveFileLocation, MainWindow mainRefIn)
+        public ImpedanceMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
-            __totalNumberOfSamples = sampleTotal;
             __currentNumberOfSamples = 0;
-            __measurementInterval = measurementInterval*1000;
             lcrMeterCont = new LcrMeterController();
 
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
-            // external-to-internal impedance measurement permutations
-            foreach (string extCode in __externalElectrodes)
+
+            if (useExternalElectrodes)
             {
-                foreach (string intCode in __internalElectrodes)
+                // external-to-internal impedance measurement permutations
+                foreach (string extCode in __externalElectrodes)
                 {
-                    impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
+                    foreach (string intCode in __internalElectrodes)
+                    {
+                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
+                    }
                 }
             }
-            //// internal-to-internal impedance measurement permutations
-            //List<string> alreadyUsed = new List<string>();
-            //alreadyUsed.Clear();
-            //foreach (string intCode1 in __internalElectrodes)
-            //{
-            //    foreach (string intCode2 in __internalElectrodes)
-            //    {
-            //        if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
-            //        {
-            //            impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
-            //        }
-            //    }
-            //    alreadyUsed.Add(intCode1);
-            //}
 
             // adjacent internal-to-internal impedance measurement permutations 
             foreach (Tuple<List<List<string>>, string> adjTuple in __allAdjacentGroups)
@@ -512,15 +501,6 @@ namespace NsfSwitchControl
                     impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(adjList, adjTuple.Item2));
                 }
             }
-
-
-            // North-only, only here as an example
-            /* ablationSwitchGroups = new List<Dictionary<string, List<string>>> { new Dictionary<string, List<string>>{
-                { "Positive", new List<string> { "c0", "c1", "c2", "c3", } }, //"c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-                { "Negative", new List<string> { "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14",
-                    "c15", "c16", "c17", "c18", "c19", "c20" } }//{ "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
-            } }; */
-
 
             swMatCont = new SwitchMatrixController();
             collectCallback = new System.Threading.TimerCallback(CollectData);
@@ -538,6 +518,17 @@ namespace NsfSwitchControl
 
             mainRef = mainRefIn;
             mainRef.addLineToImpedanceBox(__datatableImpedance);
+        }
+
+
+        public void SetImpedanceMeasurementInterval(int inImpMeasInterval)
+        {
+            __measurementInterval = inImpMeasInterval * 1000;
+        }
+
+        public void SetTotalNumberOfImpMeasSamples(int inTotalNumber)
+        {
+            __totalNumberOfSamples = inTotalNumber;
         }
 
 
