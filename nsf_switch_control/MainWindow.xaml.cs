@@ -377,6 +377,7 @@ namespace NsfSwitchControl
         public bool IsComplete = false;
         private bool inAblations = false;
         private bool preAblation = true;
+        private bool inMeasurement = true;
         public static object _syncLock = new object();
         private DateTime __recordingStartTime;
 
@@ -680,7 +681,7 @@ namespace NsfSwitchControl
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
             {
-                if (!inAblations)
+                if (inMeasurement)
                 {
                     foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
                     {
@@ -706,7 +707,11 @@ namespace NsfSwitchControl
                     {
                         ablationPermutationIndices.Add(i);
                     }
-                    inAblations = true;
+                    if (!preAblation)
+                        inAblations = true;
+                    inMeasurement = false;
+
+                    collectionTimer.Change(0, System.Threading.Timeout.Infinite);
                 }
 
                 else if (preAblation)
@@ -718,6 +723,7 @@ namespace NsfSwitchControl
                     {
                         preAblation = false;
                         inAblations = false;
+                        inMeasurement = true;
                     }
                     collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
                 }
@@ -729,6 +735,7 @@ namespace NsfSwitchControl
                     if (ablationPermutationIndices.Count < 1)
                     {
                         inAblations = false;
+                        inMeasurement = true;
                     }
                     collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
                 }

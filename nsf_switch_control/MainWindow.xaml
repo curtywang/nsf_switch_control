@@ -17,7 +17,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="140"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
@@ -54,7 +54,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <WrapPanel Grid.Row="0" Grid.Column="0">
-                <Label x:Name="__titleImpMeasIntervalDesired" Content="Impedance Measurement Interval (secs):" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="__titleImpMeasIntervalDesired" Content="Ablation active time per interval (secs):" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="120" VerticalAlignment="Center" />
             </WrapPanel>
             <WrapPanel Grid.Row="0" Grid.Column="1" Margin="25,0,0,0">
