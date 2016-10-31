@@ -28,9 +28,8 @@
             <Label x:Name="labelSwitchConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="1" />
             <Label x:Name="labelTemperatureConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" />
             <Label x:Name="labelImpedanceConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="1" />
-            <ListBox x:Name="listBoxMeasElectrodesPositive" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="2" />
-            <ListBox x:Name="listBoxMeasElectrodesNegative" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="3" />
-            <ListBox x:Name="listBoxAblationSides" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="4" />
+            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="4" Grid.Column="4" />
+            <ListBox x:Name="listBoxAblationSides" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="2" />
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>

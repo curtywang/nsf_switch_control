@@ -103,8 +103,7 @@ namespace NsfSwitchControl
             int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
             impMeasCont = new ImpedanceMeasurementController(impedanceMeasurementInterval, totalNumberOfImpMeasSamples, saveFileLocation, this);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
-            listBoxMeasElectrodesPositive.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
-            listBoxMeasElectrodesNegative.ItemsSource = impMeasCont.GetMeasurementElectrodesNegative();
+            listBoxAblationSides.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
         }
 
 
@@ -141,7 +140,7 @@ namespace NsfSwitchControl
 
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
-            impMeasCont.SetMeasurementCombinations(listBoxMeasElectrodesPositive.SelectedItems.OfType<string>().ToList(), listBoxMeasElectrodesNegative.SelectedItems.OfType<string>().ToList());
+            impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
             impMeasCont.SetAblationSides(listBoxAblationSides.SelectedItems.OfType<string>().ToList());
 
             tempMeasCont.StartMeasurement();
@@ -364,7 +363,7 @@ namespace NsfSwitchControl
     {
         private System.IO.StreamWriter dataWriteFile;
         private List<Dictionary<string, List<string>>> impedanceSwitchGroups;
-        private List<Dictionary<string, List<string>>> ablationSwitchGroups;
+        private List<Dictionary<string, List<string>>> ablationSwitchGroups = new List<Dictionary<string, List<string>>>();
         private SwitchMatrixController swMatCont;
         private LcrMeterController lcrMeterCont;
 
@@ -372,6 +371,7 @@ namespace NsfSwitchControl
         private System.Threading.Timer collectionTimer;
         private System.Threading.TimerCallback collectCallback;
         private bool collectData = false;
+        private bool useExternalElectrodes = false;
         public bool IsComplete = false;
         private bool inAblations = false;
         private bool preAblation = true;
@@ -489,20 +489,20 @@ namespace NsfSwitchControl
                     impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
                 }
             }
-            // internal-to-internal impedance measurement permutations
-            List<string> alreadyUsed = new List<string>();
-            alreadyUsed.Clear();
-            foreach (string intCode1 in __internalElectrodes)
-            {
-                foreach (string intCode2 in __internalElectrodes)
-                {
-                    if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
-                    {
-                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
-                    }
-                }
-                alreadyUsed.Add(intCode1);
-            }
+            //// internal-to-internal impedance measurement permutations
+            //List<string> alreadyUsed = new List<string>();
+            //alreadyUsed.Clear();
+            //foreach (string intCode1 in __internalElectrodes)
+            //{
+            //    foreach (string intCode2 in __internalElectrodes)
+            //    {
+            //        if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
+            //        {
+            //            impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
+            //        }
+            //    }
+            //    alreadyUsed.Add(intCode1);
+            //}
 
             // adjacent internal-to-internal impedance measurement permutations 
             foreach (Tuple<List<List<string>>, string> adjTuple in __allAdjacentGroups)
@@ -556,31 +556,6 @@ namespace NsfSwitchControl
             return __internalElectrodes;
         }
 
-        // TODO: finish me by adding the correct combos to the impedanceSwitchGroups, not sure how it should work, maybe some logic to prevent overlap?
-        //       or should we just do blind permutations of the set
-        //       or should we give only specific combinations that are allowed?
-        //       maybe we just ask for the sides we want measurements from, and then do logic rules for those sides?
-        // For now, it is just going to be, choose the sides we want to measure from and prune automatically?
-        // or should we just have a "use external electrodes" checkbox.
-        // otherwise: N-TEBW, E-TNBS, S-TEBW, W-TNBS, T-NESW, B-NESW
-        public void SetMeasurementCombinations(List<string> posElectrodes, List<string> negElectrodes)
-        {
-            // internal-to-internal impedance measurement permutations
-            List<string> alreadyUsed = new List<string>();
-            alreadyUsed.Clear();
-            foreach (string intCode1 in __internalElectrodes)
-            {
-                foreach (string intCode2 in __internalElectrodes)
-                {
-                    if ((intCode1 != intCode2) && (alreadyUsed.Contains(intCode2) == false))
-                    {
-                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode1, intCode2));
-                    }
-                }
-                alreadyUsed.Add(intCode1);
-            }
-        }
-
 
         public void SetAblationSides(List<string> inAblationSides)
         {
@@ -591,6 +566,16 @@ namespace NsfSwitchControl
                 { "Positive", ConvertFaceCodeToColumns(side_code) },
                 { "Negative", GetNegativeElectrodesForPositiveCode(side_code) } });
             }
+        }
+
+        public void SetUseExternalElectrodes(bool? useOrNot)
+        {
+            bool checkedUse;
+            if (useOrNot == null || useOrNot == false)
+                checkedUse = false;
+            else
+                checkedUse = true;
+            useExternalElectrodes = checkedUse;
         }
 
 
