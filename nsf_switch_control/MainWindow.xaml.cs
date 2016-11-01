@@ -14,6 +14,7 @@ using System.Linq;
 using System.Data;
 using System.Windows;
 using System.Windows.Data;
+using System.Threading;
 
 using NationalInstruments;
 using NationalInstruments.ModularInstruments.NISwitch;
@@ -120,16 +121,11 @@ namespace NsfSwitchControl
         {
             try
             {
-                if (textboxFolderPath.Text != "" && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
-                {
-                    InitializeSwitchAndTemperatureControllers(textboxFolderPath.Text);
-                    buttonInitializeControllers.IsEnabled = false;
-                    buttonStartCollection.IsEnabled = true;
-                    labelControllerStatus.Content = "Initialized";
-                    labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Black);
-                }
-                else
-                    System.Windows.MessageBox.Show("You forgot to choose a path or the number of samples is less than 2!");
+                InitializeSwitchAndTemperatureControllers(textboxFolderPath.Text);
+                buttonInitializeControllers.IsEnabled = false;
+                buttonStartCollection.IsEnabled = true;
+                labelControllerStatus.Content = "Initialized";
+                labelControllerStatus.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Black);
             }
             catch (Exception ex)
             {
@@ -140,30 +136,35 @@ namespace NsfSwitchControl
 
         private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
         {
-            int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
-            int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
-            impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
-            impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
-            impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
-
-            string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
-            string secondAblationSides = String.Join(",", listBoxSecondAblationSide.SelectedItems.OfType<string>().ToList());
-            string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
-            List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, lastAblationSides };
-            impMeasCont.SetAblationSides(finalAblationList);
-
-            tempMeasCont.StartMeasurement();
-            impMeasCont.StartCollection();
-            startDateTime = DateTime.Now;
-            elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
+            if (textboxFolderPath.Text != "" && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
             {
-                labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Counts Taken: " + impMeasCont.SamplesTaken().ToString();
-                if (impMeasCont.IsComplete)
-                    StopCollection(true);
-            }, this.Dispatcher);
-            buttonStartCollection.IsEnabled = false;
-            buttonStopCollection.IsEnabled = true;
-            labelControllerStatus.Content = "Running...";
+                int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
+                int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
+                impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
+                impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
+                impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
+
+                string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
+                string secondAblationSides = String.Join(",", listBoxSecondAblationSide.SelectedItems.OfType<string>().ToList());
+                string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
+                List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, lastAblationSides };
+                impMeasCont.SetAblationSides(finalAblationList);
+
+                tempMeasCont.StartMeasurement();
+                impMeasCont.StartCollection();
+                startDateTime = DateTime.Now;
+                elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
+                {
+                    labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Ablation Group: "+ impMeasCont.GroupsAblated().ToString() + ", Counts Taken: " + impMeasCont.SamplesTaken().ToString();
+                    if (impMeasCont.IsComplete)
+                        StopCollection(true);
+                }, this.Dispatcher);
+                buttonStartCollection.IsEnabled = false;
+                buttonStopCollection.IsEnabled = true;
+                labelControllerStatus.Content = "Running...";
+            }
+            else
+                System.Windows.MessageBox.Show("You forgot to choose a path or the number of samples is less than 2!");
         }
 
 
@@ -388,7 +389,6 @@ namespace NsfSwitchControl
         public static object _syncLock = new object();
         private DateTime __recordingStartTime;
         private int __currentAblationGroup = 0;
-        static private readonly int __maximumAblationGroups = 3;
 
         private int __totalNumberOfSamples;
         private int __currentNumberOfSamples;
@@ -491,18 +491,6 @@ namespace NsfSwitchControl
 
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
 
-            if (useExternalElectrodes)
-            {
-                // external-to-internal impedance measurement permutations
-                foreach (string extCode in __externalElectrodes)
-                {
-                    foreach (string intCode in __internalElectrodes)
-                    {
-                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
-                    }
-                }
-            }
-
             // adjacent internal-to-internal impedance measurement permutations 
             foreach (Tuple<List<List<string>>, string> adjTuple in __allAdjacentGroups)
             {
@@ -600,6 +588,17 @@ namespace NsfSwitchControl
             else
                 checkedUse = true;
             useExternalElectrodes = checkedUse;
+            if (useExternalElectrodes)
+            {
+                // external-to-internal impedance measurement permutations
+                foreach (string extCode in __externalElectrodes)
+                {
+                    foreach (string intCode in __internalElectrodes)
+                    {
+                        impedanceSwitchGroups.Add(ConvertPositiveNegativeFaceCodeToPermutation(intCode, extCode));
+                    }
+                }
+            }
         }
 
 
@@ -708,6 +707,12 @@ namespace NsfSwitchControl
         }
 
 
+        public int GroupsAblated()
+        {
+            return __currentAblationGroup;
+        }
+
+
         private void CollectData(object stateInf)
         {
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
@@ -717,22 +722,25 @@ namespace NsfSwitchControl
                 {
                     if (inMeasurement)
                     {
-                        foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
+                        for (int i = 0; i < 3; i++)
                         {
-                            if (collectData)
+                            foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
                             {
-                                swMatCont.Connect(permutation, false);
-                                while (!lcrMeterCont.IsLCRMeterReady()) { };
-                                string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
-                                Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
-                                WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
-                            }
-                            else
-                            {
-                                dataWriteFile.Close();
-                                collectionTimer.Dispose();
-                                IsComplete = true;
-                                return;
+                                if (collectData)
+                                {
+                                    swMatCont.Connect(permutation, false);
+                                    while (!lcrMeterCont.IsLCRMeterReady()) { };
+                                    string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
+                                    Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
+                                    WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                                }
+                                else
+                                {
+                                    dataWriteFile.Close();
+                                    collectionTimer.Dispose();
+                                    IsComplete = true;
+                                    return;
+                                }
                             }
                         }
                         swMatCont.DisconnectAll();
@@ -761,9 +769,9 @@ namespace NsfSwitchControl
                         //}
                         collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
                     }
-                    else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
+                    //else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
+                    else if ((__currentNumberOfSamples < (__totalNumberOfSamples)) && (inAblations))
                     {
-                        // TODO: I'm a bit unsure about why I subtract 1 from __totalNumberOfSamples
                         //int indexToUse = ablationPermutationIndices[0];
                         //ablationPermutationIndices.RemoveAt(0);
                         swMatCont.Connect(ablationSwitchGroups[__currentAblationGroup], true);
@@ -788,6 +796,8 @@ namespace NsfSwitchControl
                 {
                     __currentAblationGroup += 1;
                     __currentNumberOfSamples = 0;
+                    inMeasurement = true;
+                    collectionTimer.Change(0, System.Threading.Timeout.Infinite);
                 }
             }
             else
@@ -964,6 +974,50 @@ namespace NsfSwitchControl
                 MessageBox.Show(ex.Message, "SetLcrMeterFrequency() Failure");
                 return false;
             }
+        }
+
+    }
+
+
+    public class DummyLcrMeterController
+    {
+        public bool IsEnabled;
+
+        private const string __lcrMeterPort = "ASRL3::INSTR";
+        private const int __lcrFrequency = 100000;
+        private const string __termchar = "\r";
+
+        public DummyLcrMeterController()
+        {
+            this.SetLcrMeterFrequency(__lcrFrequency);
+            IsEnabled = true;
+        }
+
+
+        public bool TestConnection()
+        {
+            return true;
+        }
+
+
+        // busy wait to check if LCR meter
+        public bool IsLCRMeterReady()
+        {
+            return true;
+        }
+
+
+        // remember to check if LCR meter is ready first
+        public string GetZThetaValue()
+        {
+            Thread.Sleep(1000);
+            return "999,999";
+        }
+
+
+        public bool SetLcrMeterFrequency(int desiredFreq)
+        {
+            return true;
         }
 
     }

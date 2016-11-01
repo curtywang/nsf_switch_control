@@ -30,12 +30,8 @@
             <Label x:Name="labelSwitchConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="1" />
             <Label x:Name="labelTemperatureConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" />
             <Label x:Name="labelImpedanceConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="1" />
-            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="4" Grid.Column="5" />
-            <ListBox x:Name="listBoxFirstAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="2" />
-            <ListBox x:Name="listBoxSecondAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="3" />
-            <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="4" Grid.Column="4" />
         </Grid>
-        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="25,0,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -43,10 +39,27 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="400"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Label x:Name="__titleDataFolderLabel" Content="Data Folder:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
             <TextBox x:Name="textboxFolderPath" Width="Auto" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" />
             <Button Content="Select Folder..." Grid.Row="0" Grid.Column="2" Click="Button_Click" VerticalAlignment="Center" />
+            <Button x:Name="buttonInitializeControllers" Content="Initialize Controllers" Grid.Row="0" Grid.Column="3" IsEnabled="False" Margin="50,0" Click="buttonInitializeControllers_Click" />
+        </Grid>
+        <Grid Height="Auto" Margin="0,0,0,25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ListBox x:Name="listBoxFirstAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <ListBox x:Name="listBoxSecondAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" />
+            <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="2" />
+            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="0" Grid.Column="3" />
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>
@@ -82,12 +95,10 @@
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="200"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="buttonInitializeControllers" Content="Initialize" Grid.Row="0" Grid.Column="0" IsEnabled="False" Margin="50,0" Click="buttonInitializeControllers_Click" />
-            <Button x:Name="buttonStartCollection" Content="Start Collection" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" Click="buttonStartCollection_Click" />
-            <Button x:Name="buttonStopCollection" Content="Stop Collection" Grid.Row="0" Grid.Column="2" IsEnabled="False" Margin="50,0" Click="buttonStopCollection_Click" />
-            <Button x:Name="buttonFlushSystem" Content="Flush System" Grid.Row="0" Grid.Column="3" IsEnabled="False" Margin="50,0" Click="buttonFlushSystem_Click" />
+            <Button x:Name="buttonStartCollection" Content="Start Collection" Grid.Row="0" Grid.Column="0" IsEnabled="False" Margin="50,0" Click="buttonStartCollection_Click" />
+            <Button x:Name="buttonStopCollection" Content="Stop Collection" Grid.Row="0" Grid.Column="1" IsEnabled="False" Margin="50,0" Click="buttonStopCollection_Click" />
+            <Button x:Name="buttonFlushSystem" Content="Flush System" Grid.Row="0" Grid.Column="2" IsEnabled="False" Margin="50,0" Click="buttonFlushSystem_Click" />
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>
