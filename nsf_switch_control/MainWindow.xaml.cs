@@ -101,7 +101,9 @@ namespace NsfSwitchControl
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             impMeasCont = new ImpedanceMeasurementController(saveFileLocation, this);
             tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
-            listBoxAblationSides.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
+            listBoxFirstAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
+            listBoxSecondAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
+            listBoxLastAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
         }
 
 
@@ -143,7 +145,12 @@ namespace NsfSwitchControl
             impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
             impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
             impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
-            impMeasCont.SetAblationSides(listBoxAblationSides.SelectedItems.OfType<string>().ToList());
+
+            string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
+            string secondAblationSides = String.Join(",", listBoxSecondAblationSide.SelectedItems.OfType<string>().ToList());
+            string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
+            List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, lastAblationSides };
+            impMeasCont.SetAblationSides(finalAblationList);
 
             tempMeasCont.StartMeasurement();
             impMeasCont.StartCollection();
@@ -380,6 +387,8 @@ namespace NsfSwitchControl
         private bool inMeasurement = true;
         public static object _syncLock = new object();
         private DateTime __recordingStartTime;
+        private int __currentAblationGroup = 0;
+        static private readonly int __maximumAblationGroups = 3;
 
         private int __totalNumberOfSamples;
         private int __currentNumberOfSamples;
@@ -554,9 +563,32 @@ namespace NsfSwitchControl
             // we expect N, E, S, W, B, T
             foreach (string side_code in inAblationSides)
             {
+                if (side_code.Length < 1)
+                    continue;
+                string[] codes = side_code.Split(',');
+                List<string> posGroups = new List<string>();
+                HashSet<string> negGroups = new HashSet<string>();
+                foreach (string code in codes)
+                {
+                    posGroups = posGroups.Concat(ConvertFaceCodeToColumns(code)).ToList();
+                    List<string> negCodes = GetNegativeElectrodesForPositiveCode(code);
+                    foreach (string negCode in negCodes)
+                    {
+                        negGroups.Add(negCode);
+                    }
+                }
+                foreach (string posElectrode in posGroups)
+                {
+                    negGroups.Remove(posElectrode);
+                }
+
                 ablationSwitchGroups.Add(new Dictionary<string, List<string>>{
-                { "Positive", ConvertFaceCodeToColumns(side_code) },
-                { "Negative", GetNegativeElectrodesForPositiveCode(side_code) } });
+                { "Positive", posGroups },
+                { "Negative", negGroups.ToList() } });
+
+                //ablationSwitchGroups.Add(new Dictionary<string, List<string>>{
+                //{ "Positive", ConvertFaceCodeToColumns(side_code) },
+                //{ "Negative", GetNegativeElectrodesForPositiveCode(side_code) } });
             }
         }
 
@@ -679,75 +711,84 @@ namespace NsfSwitchControl
         private void CollectData(object stateInf)
         {
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
-            if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
+            if (collectData && (__currentAblationGroup < ablationSwitchGroups.Count))
             {
-                if (inMeasurement)
+                if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
                 {
-                    foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
+                    if (inMeasurement)
                     {
-                        if (collectData)
+                        foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
                         {
-                            swMatCont.Connect(permutation, false);
-                            while (!lcrMeterCont.IsLCRMeterReady()) { };
-                            string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
-                            Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
-                            WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                            if (collectData)
+                            {
+                                swMatCont.Connect(permutation, false);
+                                while (!lcrMeterCont.IsLCRMeterReady()) { };
+                                string impPhaseDataRaw = lcrMeterCont.GetZThetaValue();
+                                Tuple<string, string> impPhaseDataSeparated = ConvertLcrXallToImpedanceAndPhase(impPhaseDataRaw);
+                                WritePermutationImpedanceToFile(permutation, impPhaseDataSeparated.Item1, impPhaseDataSeparated.Item2);
+                            }
+                            else
+                            {
+                                dataWriteFile.Close();
+                                collectionTimer.Dispose();
+                                IsComplete = true;
+                                return;
+                            }
                         }
-                        else
-                        {
-                            dataWriteFile.Close();
-                            collectionTimer.Dispose();
-                            IsComplete = true;
-                            return;
-                        }
-                    }
-                    swMatCont.DisconnectAll();
-                    __currentNumberOfSamples++;
-                    foreach (int i in Enumerable.Range(0, ablationSwitchGroups.Count).OrderBy(x => rseed.Next()))
-                    {
-                        ablationPermutationIndices.Add(i);
-                    }
-                    if (!preAblation)
-                        inAblations = true;
-                    inMeasurement = false;
+                        swMatCont.DisconnectAll();
+                        __currentNumberOfSamples++;
+                        //foreach (int i in Enumerable.Range(0, ablationSwitchGroups.Count).OrderBy(x => rseed.Next()))
+                        //{
+                        //    ablationPermutationIndices.Add(i);
+                        //}
+                        if (!preAblation)
+                            inAblations = true;
+                        inMeasurement = false;
 
-                    collectionTimer.Change(0, System.Threading.Timeout.Infinite);
-                }
+                        collectionTimer.Change(0, System.Threading.Timeout.Infinite);
+                    }
 
-                else if (preAblation)
-                {
-                    int indexToUse = ablationPermutationIndices[0];
-                    ablationPermutationIndices.RemoveAt(0);
-                    swMatCont.Connect(ablationSwitchGroups[indexToUse], true);
-                    if (ablationPermutationIndices.Count < 1)
+                    else if (preAblation)
                     {
-                        preAblation = false;
-                        inAblations = false;
-                        inMeasurement = true;
+                        //int indexToUse = ablationPermutationIndices[0];
+                        //ablationPermutationIndices.RemoveAt(0);
+                        swMatCont.Connect(ablationSwitchGroups[__currentAblationGroup], true);
+                        //if (ablationPermutationIndices.Count < 1)
+                        //{
+                            preAblation = false;
+                            inAblations = false;
+                            inMeasurement = true;
+                        //}
+                        collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
                     }
-                    collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
-                }
-                else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
-                {
-                    int indexToUse = ablationPermutationIndices[0];
-                    ablationPermutationIndices.RemoveAt(0);
-                    swMatCont.Connect(ablationSwitchGroups[indexToUse], true);
-                    if (ablationPermutationIndices.Count < 1)
+                    else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
                     {
-                        inAblations = false;
-                        inMeasurement = true;
+                        // TODO: I'm a bit unsure about why I subtract 1 from __totalNumberOfSamples
+                        //int indexToUse = ablationPermutationIndices[0];
+                        //ablationPermutationIndices.RemoveAt(0);
+                        swMatCont.Connect(ablationSwitchGroups[__currentAblationGroup], true);
+                        //if (ablationPermutationIndices.Count < 1)
+                        //{
+                            inAblations = false;
+                            inMeasurement = true;
+                        //}
+                        collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
                     }
-                    collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
+                    else
+                    {
+                        dataWriteFile.Close();
+                        collectionTimer.Dispose();
+                        inAblations = false;
+                        IsComplete = true;
+                        return;
+                    }
+                    //return;
                 }
                 else
                 {
-                    dataWriteFile.Close();
-                    collectionTimer.Dispose();
-                    inAblations = false;
-                    IsComplete = true;
-                    return;
+                    __currentAblationGroup += 1;
+                    __currentNumberOfSamples = 0;
                 }
-                return;
             }
             else
             {
