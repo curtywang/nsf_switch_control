@@ -408,7 +408,7 @@ namespace NsfSwitchControl
         static private readonly List<string> __groupESE = new List<string> { "c26" };
         static private readonly List<string> __groupESW = new List<string> { "c27" };
         static private readonly List<string> __groupAllInternal = __groupN.Concat(__groupE).Concat(__groupS).Concat(__groupW).Concat(__groupB).Concat(__groupT).ToList();
-        static private readonly List<string> __externalElectrodes = new List<string> { "ENE", "ENW", "ESE", "ESW" };
+        static private readonly List<string> __externalElectrodes = new List<string> { "ENE" }; //, "ENW", "ESE", "ESW" };
         static private readonly List<string> __internalElectrodes = new List<string> { "N", "E", "S", "W", "B", "T" };
         // for top and bottom faces
         static private readonly List<string> __topBottomRingElectrodes = new List<string> { "N", "E", "S", "W" };
@@ -744,13 +744,15 @@ namespace NsfSwitchControl
                             }
                         }
                         swMatCont.DisconnectAll();
-                        __currentNumberOfSamples++;
                         //foreach (int i in Enumerable.Range(0, ablationSwitchGroups.Count).OrderBy(x => rseed.Next()))
                         //{
                         //    ablationPermutationIndices.Add(i);
                         //}
                         if (!preAblation)
+                        {
+                            __currentNumberOfSamples++;
                             inAblations = true;
+                        }
                         inMeasurement = false;
 
                         collectionTimer.Change(0, System.Threading.Timeout.Infinite);
@@ -863,7 +865,7 @@ namespace NsfSwitchControl
         private NationalInstruments.Visa.MessageBasedSession mbSession;
         public bool IsEnabled;
 
-        private const string __lcrMeterPort = "ASRL3::INSTR";
+        private const string __lcrMeterPort = "ASRL4::INSTR";
         private const int __lcrFrequency = 100000;
         private const string __termchar = "\r";
 
