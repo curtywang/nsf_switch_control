@@ -394,7 +394,7 @@ namespace NsfSwitchControl
         private int __currentNumberOfSamples;
         private string __dataTableHeader;
         private const int __preAblationMilliseconds = 5000; // TODO: change this if needed
-        private int __measurementInterval;
+        private List<int> __measurementInterval;
         private List<int> ablationPermutationIndices = new List<int>();
         private Random rseed = new Random();
         static private readonly List<string> __groupN = new List<string> { "c0", "c1", "c2", "c3" };
@@ -521,7 +521,13 @@ namespace NsfSwitchControl
 
         public void SetImpedanceMeasurementInterval(int inImpMeasInterval)
         {
-            __measurementInterval = inImpMeasInterval * 1000;
+            // TODO: measurement interval depends on the number of sides per group
+            int baseInterval = inImpMeasInterval * 1000;
+            __measurementInterval = new List<int>(ablationSwitchGroups.Count);
+            for (int i = 0; i < ablationSwitchGroups.Count; i++)
+            {
+                __measurementInterval[i] = baseInterval * ablationSwitchGroups[i]["Positive"].Count;
+            }
         }
 
         public void SetTotalNumberOfImpMeasSamples(int inTotalNumber)
@@ -782,7 +788,7 @@ namespace NsfSwitchControl
                             inAblations = false;
                             inMeasurement = true;
                         //}
-                        collectionTimer.Change(__measurementInterval, System.Threading.Timeout.Infinite);
+                        collectionTimer.Change(__measurementInterval[__currentAblationGroup], System.Threading.Timeout.Infinite);
                     }
                     else
                     {
