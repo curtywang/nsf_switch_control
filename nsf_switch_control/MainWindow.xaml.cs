@@ -140,7 +140,6 @@ namespace NsfSwitchControl
             {
                 int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
                 int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
-                impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
                 impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
                 impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
 
@@ -149,6 +148,7 @@ namespace NsfSwitchControl
                 string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
                 List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, lastAblationSides };
                 impMeasCont.SetAblationSides(finalAblationList);
+                impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
 
                 tempMeasCont.StartMeasurement();
                 impMeasCont.StartCollection();
@@ -523,10 +523,10 @@ namespace NsfSwitchControl
         {
             // TODO: measurement interval depends on the number of sides per group
             int baseInterval = inImpMeasInterval * 1000;
-            __measurementInterval = new List<int>(ablationSwitchGroups.Count);
+            __measurementInterval = new List<int>();
             for (int i = 0; i < ablationSwitchGroups.Count; i++)
             {
-                __measurementInterval[i] = baseInterval * ablationSwitchGroups[i]["Positive"].Count;
+                __measurementInterval.Add(baseInterval * ablationSwitchGroups[i]["Positive"].Count / 4); // div by 4 cause the count is per-electrode
             }
         }
 
