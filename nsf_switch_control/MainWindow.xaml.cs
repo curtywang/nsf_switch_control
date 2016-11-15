@@ -390,8 +390,8 @@ namespace NsfSwitchControl
         private DateTime __recordingStartTime;
         private int __currentAblationGroup = 0;
 
-        private int __totalNumberOfSamples;
-        private int __currentNumberOfSamples;
+        private List<int> __totalNumberOfSamples;
+        private List<int> __currentNumberOfSamples;
         private string __dataTableHeader;
         private const int __preAblationMilliseconds = 5000; // TODO: change this if needed
         private List<int> __measurementInterval;
@@ -486,7 +486,6 @@ namespace NsfSwitchControl
 
         public ImpedanceMeasurementController(string saveFileLocation, MainWindow mainRefIn)
         {
-            __currentNumberOfSamples = 0;
             lcrMeterCont = new LcrMeterController();
 
             impedanceSwitchGroups = new List<Dictionary<string, List<string>>>();
@@ -543,7 +542,19 @@ namespace NsfSwitchControl
 
         public void SetTotalNumberOfImpMeasSamples(int inTotalNumber)
         {
-            __totalNumberOfSamples = inTotalNumber;
+            __totalNumberOfSamples = new List<int>();
+            __currentNumberOfSamples = new List<int>();
+            // TODO: Does the number of samples of single groups have to add up to the total of the double groups?
+            for (int i = 0; i < ablationSwitchGroups.Count; i++)
+            {
+                __totalNumberOfSamples.Add(inTotalNumber);
+                __currentNumberOfSamples.Add(0);
+            }
+        }
+
+        public void SetGroupNumberOfImpMeasSamples(int newImpMeasSamples, int ablationGroup)
+        {
+            __totalNumberOfSamples[ablationGroup] = newImpMeasSamples;
         }
 
 
@@ -720,7 +731,7 @@ namespace NsfSwitchControl
 
         public int SamplesTaken()
         {
-            return __currentNumberOfSamples;
+            return __currentNumberOfSamples[__currentAblationGroup];
         }
 
 
@@ -735,7 +746,7 @@ namespace NsfSwitchControl
             collectionTimer.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             if (collectData && (__currentAblationGroup < ablationSwitchGroups.Count))
             {
-                if (collectData && (__currentNumberOfSamples < __totalNumberOfSamples))
+                if (collectData && (__currentNumberOfSamples[__currentAblationGroup] < __totalNumberOfSamples[__currentAblationGroup]))
                 {
                     if (inMeasurement)
                     {
@@ -767,7 +778,7 @@ namespace NsfSwitchControl
                         //}
                         if (!preAblation)
                         {
-                            __currentNumberOfSamples++;
+                            __currentNumberOfSamples[__currentAblationGroup]++;
                             inAblations = true;
                         }
                         inMeasurement = false;
@@ -789,7 +800,7 @@ namespace NsfSwitchControl
                         collectionTimer.Change(__preAblationMilliseconds, System.Threading.Timeout.Infinite);
                     }
                     //else if ((__currentNumberOfSamples < (__totalNumberOfSamples - 1)) && (inAblations))
-                    else if ((__currentNumberOfSamples < (__totalNumberOfSamples)) && (inAblations))
+                    else if ((__currentNumberOfSamples[__currentAblationGroup] < (__totalNumberOfSamples[__currentAblationGroup])) && (inAblations))
                     {
                         //int indexToUse = ablationPermutationIndices[0];
                         //ablationPermutationIndices.RemoveAt(0);
@@ -814,7 +825,7 @@ namespace NsfSwitchControl
                 else
                 {
                     __currentAblationGroup += 1;
-                    __currentNumberOfSamples = 0;
+                    //__currentNumberOfSamples = 0;
                     inMeasurement = true;
                     collectionTimer.Change(0, System.Threading.Timeout.Infinite);
                 }
