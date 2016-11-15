@@ -521,13 +521,24 @@ namespace NsfSwitchControl
 
         public void SetImpedanceMeasurementInterval(int inImpMeasInterval)
         {
-            // TODO: measurement interval depends on the number of sides per group
-            int baseInterval = inImpMeasInterval * 1000;
+            // measurement interval is based on two-sided groups, reduce to 10% for single-sided groups
+            // starts at 0.1, has to be squared for the number
+            int baseInterval = inImpMeasInterval * 10;//* 1000;
             __measurementInterval = new List<int>();
             for (int i = 0; i < ablationSwitchGroups.Count; i++)
             {
-                __measurementInterval.Add(baseInterval * ablationSwitchGroups[i]["Positive"].Count / 4); // div by 4 cause the count is per-electrode
+                __measurementInterval.Add(baseInterval * 10 ^ (ablationSwitchGroups[i]["Positive"].Count / 4)); // div by 4 cause the count is per-electrode
             }
+        }
+
+        public void SetImpedanceMeasurementInterval(int newImpMeasIntervalExactSeconds, int ablationGroup)
+        {
+            __measurementInterval[ablationGroup] = newImpMeasIntervalExactSeconds * 1000;
+        }
+
+        public List<int> GetImpedanceMeasurementInterval()
+        {
+            return __measurementInterval;
         }
 
         public void SetTotalNumberOfImpMeasSamples(int inTotalNumber)
