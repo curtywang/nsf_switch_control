@@ -30,6 +30,7 @@ namespace NsfSwitchControl
     public partial class MainWindow : Window
     {
         private TemperatureMeasurementController tempMeasCont;
+        private TemperatureMeasurementController tempMeasContTop;
         private LcrMeterController lcrMeterCont;
         private System.Windows.Threading.DispatcherTimer elapsedTimer;
         private const int fileRefreshIntervalSeconds = 5;
@@ -101,7 +102,8 @@ namespace NsfSwitchControl
         {
             string saveFileLocation = saveFileLocationFolder + "/" + DateTime.Now.ToString("yyyy.MM.dd") + "-" + DateTime.Now.ToString("HH.mm");
             impMeasCont = new ImpedanceMeasurementController(saveFileLocation, this);
-            tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this);
+            tempMeasCont = new TemperatureMeasurementController(saveFileLocation, this, "PXI1Slot2");
+            tempMeasContTop = new TemperatureMeasurementController(saveFileLocation, this, "cDAQ1Mod1");
             listBoxFirstAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
             listBoxSecondAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
             listBoxLastAblationSide.ItemsSource = impMeasCont.GetMeasurementElectrodesPositive();
@@ -151,6 +153,8 @@ namespace NsfSwitchControl
                 impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
 
                 tempMeasCont.StartMeasurement();
+                if (tempMeasContTop != null)
+                    tempMeasContTop.StartMeasurement();
                 impMeasCont.StartCollection();
                 startDateTime = DateTime.Now;
                 elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
@@ -171,6 +175,8 @@ namespace NsfSwitchControl
         private void StopCollection(bool isComplete)
         {
             tempMeasCont.StopMeasurement();
+            if (tempMeasContTop != null)
+                tempMeasContTop.StopMeasurement();
             impMeasCont.StopCollection();
             elapsedTimer.IsEnabled = false;
             buttonStopCollection.IsEnabled = false;
@@ -1065,7 +1071,7 @@ namespace NsfSwitchControl
         public static object _syncLock = new object();
 
         // RTD physical configuration
-        private const string __pxiLocation = "PXI1Slot2";
+        private string __pxiLocation;
         private readonly AIRtdType __rtdType = AIRtdType.Pt3851;
         private const double __r0Numeric = 100.0;
         private readonly AIResistanceConfiguration __resistanceConfiguration = AIResistanceConfiguration.ThreeWire;
@@ -1090,15 +1096,33 @@ namespace NsfSwitchControl
         static private readonly List<int> __stickS = new List<int> { 2,7,12,17 };
         static private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
         static private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
-        static private readonly List<List<int>> __sticksToMeasure = new List<List<int>> { __stickN, __stickE, __stickS, __stickW, __stickB };
-        static private readonly List<int> __channelsToUse = __sticksToMeasure.SelectMany(x => x).ToList();
+        static private readonly List<int> __stickT = new List<int> { 0,1,2,3 };
 
-        public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn)
+        // TODO: the two lines below need to be switched so we can use the usb daq for the top
+        // the usb daq also stores in a different file anyway
+        static private List<List<int>> __sticksToMeasure;
+        static private List<int> __channelsToUse;
+        private bool isUSB = false;
+
+        public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn, string devAddress)
         {
+            __pxiLocation = devAddress;
             // the USB daq uses "cDAQ1Mod1/aiX" as its location
             __datatableTemperature.Columns.Add("Date");
             __datatableTemperature.Columns.Add("Time");
             //foreach (int channelId in __channelsToUse)
+            if (devAddress[0] == 'P')
+            {
+                dataWriteFile = new System.IO.StreamWriter(saveFileLocation + ".temperature.csv");
+                __sticksToMeasure = new List<List<int>> { __stickN, __stickE, __stickS, __stickW, __stickB };
+            }
+            else
+            {
+                dataWriteFile = new System.IO.StreamWriter(saveFileLocation + ".temperature-usb.csv");
+                __sticksToMeasure = new List<List<int>> { __stickT };
+                isUSB = true;
+            }
+            __channelsToUse = __sticksToMeasure.SelectMany(x => x).ToList();
             foreach (List<int> stickList in __sticksToMeasure)
             {
                 foreach (int channelId in stickList)
@@ -1107,7 +1131,6 @@ namespace NsfSwitchControl
                     __datatableTemperature.Columns.Add(ConvertChannelIdToFace(channelId) + channelId.ToString());
                 }
             }
-            dataWriteFile = new System.IO.StreamWriter(saveFileLocation+".temperature.csv");
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
 
@@ -1246,11 +1269,14 @@ namespace NsfSwitchControl
                     currentLine += String.Join(",", sampleData);
                     dataWriteFile.WriteLine(currentLine);
 
-                    lock (_syncLock)
+                    if (!isUSB)
                     {
-                        __datatableTemperature.Rows.Add(dataRow);
+                        lock (_syncLock)
+                        {
+                            __datatableTemperature.Rows.Add(dataRow);
+                        }
+                        mainRef.addLineToTemperatureBox(__datatableTemperature);
                     }
-                    mainRef.addLineToTemperatureBox(__datatableTemperature);
                 }
             }
             catch (System.DataMisalignedException dmex)
