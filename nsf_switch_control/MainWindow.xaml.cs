@@ -142,7 +142,6 @@ namespace NsfSwitchControl
             {
                 int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
                 int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
-                impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
                 impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
 
                 string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
@@ -150,6 +149,7 @@ namespace NsfSwitchControl
                 string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
                 List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, lastAblationSides };
                 impMeasCont.SetAblationSides(finalAblationList);
+                impMeasCont.SetTotalNumberOfImpMeasSamples(totalNumberOfImpMeasSamples);
                 impMeasCont.SetImpedanceMeasurementInterval(impedanceMeasurementInterval);
 
                 tempMeasCont.StartMeasurement();
@@ -250,6 +250,12 @@ namespace NsfSwitchControl
             {
                 MessageBox.Show(ex.Message, "datagrid problem!");
             }
+        }
+
+        private void selectAllTextInTextbox(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+        {
+            var tb = (System.Windows.Controls.TextBox)sender;
+            tb.SelectAll();
         }
     }
 
@@ -532,7 +538,7 @@ namespace NsfSwitchControl
             __measurementInterval = new List<int>();
             for (int i = 0; i < ablationSwitchGroups.Count; i++)
             {
-                __measurementInterval.Add(baseInterval * 10 ^ (ablationSwitchGroups[i]["Positive"].Count / 4)); // div by 4 cause the count is per-electrode
+                __measurementInterval.Add(baseInterval * (int)(Math.Pow(10, (ablationSwitchGroups[i]["Positive"].Count / 4)))); // div by 4 cause the count is per-electrode
             }
         }
 
@@ -737,6 +743,8 @@ namespace NsfSwitchControl
 
         public int SamplesTaken()
         {
+            if (__currentAblationGroup >= __currentNumberOfSamples.Count)
+                return __currentNumberOfSamples.Count;
             return __currentNumberOfSamples[__currentAblationGroup];
         }
 
@@ -1079,7 +1087,8 @@ namespace NsfSwitchControl
         private readonly double __minimumValueNumeric = 0.0;
         private readonly double __maximumValueNumeric = 200.0;
         private readonly AITemperatureUnits __temperatureUnit = AITemperatureUnits.DegreesC;
-        private readonly double __currentExcitationNumeric = 900e-6;
+        private readonly double __currentExcitationPXI = 900e-6;
+        private readonly double __currentExcitationUSB = 1e-3;
 
         // Sampling configuration
         private const double __sampleRate = 2.0; // in Hz
@@ -1091,8 +1100,8 @@ namespace NsfSwitchControl
         private MainWindow mainRef;
         private DataTable __datatableTemperature = new DataTable("temperature");
 
-        static private readonly List<int> __stickN = new List<int> { 0,5,10,15 };
-        static private readonly List<int> __stickE = new List<int> { 1,6,11,16 };
+        private readonly List<int> __stickN = new List<int> { 0,5,10,15 };
+        private readonly List<int> __stickE = new List<int> { 1,6,11,16 };
         static private readonly List<int> __stickS = new List<int> { 2,7,12,17 };
         static private readonly List<int> __stickW = new List<int> { 3,8,13,18 };
         static private readonly List<int> __stickB = new List<int> { 4,9,14,19 };
@@ -1100,8 +1109,8 @@ namespace NsfSwitchControl
 
         // TODO: the two lines below need to be switched so we can use the usb daq for the top
         // the usb daq also stores in a different file anyway
-        static private List<List<int>> __sticksToMeasure;
-        static private List<int> __channelsToUse;
+        private List<List<int>> __sticksToMeasure;
+        private List<int> __channelsToUse;
         private bool isUSB = false;
 
         public TemperatureMeasurementController(string saveFileLocation, MainWindow mainRefIn, string devAddress)
@@ -1134,10 +1143,12 @@ namespace NsfSwitchControl
             __dataTableHeader = "date,time," + String.Join(",", channelsToUseAddresses);
             dataWriteFile.WriteLine(__dataTableHeader);
 
-            BindingOperations.EnableCollectionSynchronization(__datatableTemperature.DefaultView, _syncLock);
-
-            mainRef = mainRefIn;
-            mainRef.addLineToTemperatureBox(__datatableTemperature);
+            if (devAddress[0] == 'P')
+            {
+                BindingOperations.EnableCollectionSynchronization(__datatableTemperature.DefaultView, _syncLock);
+                mainRef = mainRefIn;
+                mainRef.addLineToTemperatureBox(__datatableTemperature);
+            }
         }
 
 
@@ -1184,6 +1195,11 @@ namespace NsfSwitchControl
             {
                 myTask = new NationalInstruments.DAQmx.Task();
                 myAsyncCallback = new AsyncCallback(AnalogInCallback);
+                double __currentExcitationNumeric;
+                if (__pxiLocation[0] == 'P')
+                    __currentExcitationNumeric = __currentExcitationPXI;
+                else
+                    __currentExcitationNumeric = __currentExcitationUSB;
 
                 // tell the PXIe-4357 to use the channels in channelsToUse
                 foreach (string channel in channelsToUseAddresses)
@@ -1261,7 +1277,7 @@ namespace NsfSwitchControl
                     // sampleData is in direct order, sourceArray is in added order
                     // so __channelsToUse is going to be in 0,5,10,15
                     // but sourceArray is ordered to be the original, so we have to get the actual index
-                    foreach (int channel in Enumerable.Range(0,20)) //__channelsToUse) 
+                    foreach (int channel in Enumerable.Range(0,__channelsToUse.Count)) //__channelsToUse) 
                     {
                         sampleData[__channelsToUse[channel]] = sourceArray[channel].Samples[sample].Value;
                         dataRow[ConvertChannelIdToFace(__channelsToUse[channel]) + __channelsToUse[channel].ToString()] = sourceArray[channel].Samples[sample].Value.ToString("N2");

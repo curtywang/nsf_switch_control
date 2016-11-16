@@ -72,7 +72,7 @@
             </Grid.ColumnDefinitions>
             <WrapPanel Grid.Row="0" Grid.Column="0">
                 <Label x:Name="__titleImpMeasIntervalDesired" Content="Ablation active time per interval (secs):" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="120" VerticalAlignment="Center" />
+                <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="120" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
             </WrapPanel>
             <WrapPanel Grid.Row="0" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" />
@@ -80,7 +80,7 @@
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="0">
                 <Label x:Name="__titleImpMeasSamplesDesired" Content="Desired Number of Imp. Measurements:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="10" VerticalAlignment="Center" />
+                <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />
