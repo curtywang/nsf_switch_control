@@ -22,6 +22,8 @@ using NationalInstruments.ModularInstruments.SystemServices.DeviceServices;
 using NationalInstruments.Visa;
 using NationalInstruments.DAQmx;
 
+using NetMQ;
+
 namespace NsfSwitchControl
 {
     /// <summary>
@@ -401,6 +403,8 @@ namespace NsfSwitchControl
         public static object _syncLock = new object();
         private DateTime __recordingStartTime;
         private int __currentAblationGroup = 0;
+
+        public System.Collections.Concurrent.ConcurrentQueue<DataRow> OutputQueue = new System.Collections.Concurrent.ConcurrentQueue<DataRow>();
 
         private List<int> __totalNumberOfSamples;
         private List<int> __currentNumberOfSamples;
@@ -880,6 +884,8 @@ namespace NsfSwitchControl
             dataRow[4] = impedance;
             dataRow[5] = phase;
 
+            OutputQueue.Enqueue(dataRow);
+
             lock (_syncLock)
             {
                 __datatableImpedance.Rows.Add(dataRow);
@@ -1309,5 +1315,183 @@ namespace NsfSwitchControl
             myTask.Dispose();
             runningTask = null;
         }
+    }
+
+    public class SingleImpedanceMeasurement
+    {
+        public string side;
+        public string pos;
+        public string neg;
+        public string time;
+        public string magn;
+        public string phase;
+        public string joined;
+
+        public SingleImpedanceMeasurement(DataRow inData)
+        {
+            if (inData.ItemArray.Count() < 6)
+                throw new ValueUnavailableException();
+            else
+            {
+                string negCode = (string)inData[3];
+                if (negCode.Length == 3)
+                    side = (string)inData[2];
+                else
+                    side = (string)inData[3];
+                pos = (string)inData[2];
+                neg = (string)inData[3];
+                time = (string)inData[1];
+                magn = (string)inData[4];
+                phase = (string)inData[5];
+                List<string> all_together = new List<string> { time, pos, neg, magn, phase };
+                joined = String.Join(",", all_together);
+            }
+        }
+
+        public override string ToString()
+        {
+            return joined;
+        }
+    }
+
+    public class DepthEstimator
+    {
+        private NetMQ.Sockets.RequestSocket socket;
+        private System.Collections.Concurrent.ConcurrentQueue<DataRow> IMCQueue;
+        private Dictionary<string, List<SingleImpedanceMeasurement>> initialMeasurements = new Dictionary<string, List<SingleImpedanceMeasurement>>
+        {
+            {"N", new List<SingleImpedanceMeasurement>() },
+            {"E", new List<SingleImpedanceMeasurement>() },
+            {"S", new List<SingleImpedanceMeasurement>() },
+            {"W", new List<SingleImpedanceMeasurement>() },
+            {"B", new List<SingleImpedanceMeasurement>() },
+            {"T", new List<SingleImpedanceMeasurement>() },
+        };
+        private Dictionary<string, List<double>> lastDepths = new Dictionary<string, List<double>>
+        {
+            {"N", new List<double>()},
+            {"E", new List<double>()},
+            {"S", new List<double>()},
+            {"W", new List<double>()},
+            {"B", new List<double>()},
+            {"T", new List<double>()}
+        };
+        private System.Threading.Timer collectionTimer;
+        private bool collectData = false;
+        private object _syncLock = new object();
+        private bool usingExternalElectrodes;
+        private enum measurementState { PreInitial, Initial, InAblation };
+        private measurementState currentState = measurementState.PreInitial;
+        private int numberOfMeasurements = 0;
+        private int __nominalCount;
+
+        public DepthEstimator(System.Collections.Concurrent.ConcurrentQueue<DataRow> InputQueue, bool usingExternal, string svmServerAddress)
+        {
+            socket = new NetMQ.Sockets.RequestSocket(svmServerAddress);
+            IMCQueue = InputQueue;
+            usingExternalElectrodes = usingExternal;
+            if (usingExternalElectrodes)
+                __nominalCount = 30; // 5 measurements per measurement block, extra 5 measurements per measurement block, 3 blocks per measurement instance
+            else
+                __nominalCount = 15;
+        }
+
+        public bool Start()
+        {
+            collectData = true;
+            collectionTimer = new System.Threading.Timer(UpdateDepth, null, 0, System.Threading.Timeout.Infinite);
+            return false;
+        }
+
+
+        public bool Stop()
+        {
+            collectData = false;
+            return false;
+        }
+
+        public void UpdateDepth(object noobject)
+        {
+            if (!IMCQueue.IsEmpty)
+            {
+                DataRow inData;
+                List<SingleImpedanceMeasurement> incomingMeasurements = new List<SingleImpedanceMeasurement>();
+                while (IMCQueue.TryDequeue(out inData)) { // grab all we can greedily
+                    incomingMeasurements.Add(new SingleImpedanceMeasurement(inData));
+                }
+                numberOfMeasurements += incomingMeasurements.Count;
+
+                if (numberOfMeasurements < __nominalCount)
+                    currentState = measurementState.PreInitial;
+                else if (numberOfMeasurements < (2 * __nominalCount))
+                {
+                    currentState = measurementState.Initial;
+                    foreach (SingleImpedanceMeasurement meas in incomingMeasurements)
+                    {
+                        initialMeasurements[meas.side].Add(meas);
+                    }
+                    // TODO: actually, we should be averaging the initial measurements, whoops.
+                    //       Also this might be a problem with TC's code too, not sure if he's using all three...
+                    // We should also be doing the discard one, average two stuff
+                }
+                else
+                {
+                    currentState = measurementState.InAblation;
+                    // TODO: check the lastDepths to get the correct requests,
+                    //       send the correct requests to the svmServer,
+                    //       get back responses, then update the lastDepths
+                }
+            }
+            else if (!collectData)
+            {
+                collectionTimer = null;
+                return;
+            }
+            collectionTimer.Change(0, System.Threading.Timeout.Infinite);
+        }
+
+        public Dictionary<string, double> GetDepths()
+        {
+            Dictionary<string, double> returnDict = new Dictionary<string, double>();
+            foreach (KeyValuePair<string, List<double>> entry in lastDepths)
+            {
+                returnDict.Add(entry.Key, DiscardAndAverage(entry.Value));
+            }
+            return returnDict;
+        }
+
+        private double DiscardAndAverage(List<double> inList)
+        {
+            if (inList.Count < 3)
+                throw new ValueUnavailableException();
+            else
+            {
+                double diff1 = Math.Abs(inList[0] - inList[1]);
+                double diff2 = Math.Abs(inList[0] - inList[2]);
+                double diff3 = Math.Abs(inList[1] - inList[2]);
+                if ((diff3 <= diff2) && (diff3 <= diff1))
+                {
+                    return (inList[1] + inList[2]) / 2.0;
+                }
+                else if ((diff2 <= diff3) && (diff2 <= diff1))
+                {
+                    return (inList[0] + inList[2]) / 2.0;
+                }
+                else if ((diff1 <= diff2) && (diff1 <= diff3))
+                {
+                    return (inList[0] + inList[1]) / 2.0;
+                }
+                else
+                {
+                    inList.Sort();
+                    return inList[1];
+                }
+            }
+        }
+    }
+
+    public class AblationPWMController
+    {
+        // TODO: gotta make me, and connect me with the DepthEstimator, probably spawn the DepthEstimator from here tbh
     }
 }
