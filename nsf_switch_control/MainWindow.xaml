@@ -65,6 +65,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -85,6 +86,18 @@
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <Label x:Name="labelTimeElapsed" Content="00:00" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False"  />
+            </WrapPanel>
+            <WrapPanel Grid.Row="2" Grid.Column="0">
+                <Label x:Name="__titleNDepthTarget" Content="N Target:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxNDepthTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+                <Label x:Name="__titleEDepthTarget" Content="E Target:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxEDepthTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+                <Label x:Name="__titleSDepthTarget" Content="S Target:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxSDepthTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+                <Label x:Name="__titleWDepthTarget" Content="W Target:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxWDepthTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+                <Label x:Name="__titleBDepthTarget" Content="B Target:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxBDepthTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
             </WrapPanel>
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">

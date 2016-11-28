@@ -1327,6 +1327,18 @@ namespace NsfSwitchControl
         public string phase;
         public string joined;
 
+        public SingleImpedanceMeasurement(string in_side, string in_pos, string in_neg, string in_time, string in_magn, string in_phase)
+        {
+            side = in_side;
+            pos = in_pos;
+            neg = in_neg;
+            time = in_time;
+            magn = in_magn;
+            phase = in_phase;
+            List<string> all_together = new List<string> { time, pos, neg, magn, phase };
+            joined = String.Join(",", all_together);
+        }
+
         public SingleImpedanceMeasurement(DataRow inData)
         {
             if (inData.ItemArray.Count() < 6)
@@ -1358,7 +1370,7 @@ namespace NsfSwitchControl
     {
         private NetMQ.Sockets.RequestSocket socket;
         private System.Collections.Concurrent.ConcurrentQueue<DataRow> IMCQueue;
-        private Dictionary<string, List<SingleImpedanceMeasurement>> initialMeasurements = new Dictionary<string, List<SingleImpedanceMeasurement>>
+        private Dictionary<string, List<SingleImpedanceMeasurement>> initialMeasurementLists = new Dictionary<string, List<SingleImpedanceMeasurement>>
         {
             {"N", new List<SingleImpedanceMeasurement>() },
             {"E", new List<SingleImpedanceMeasurement>() },
@@ -1367,17 +1379,29 @@ namespace NsfSwitchControl
             {"B", new List<SingleImpedanceMeasurement>() },
             {"T", new List<SingleImpedanceMeasurement>() },
         };
-        private Dictionary<string, List<double>> lastDepths = new Dictionary<string, List<double>>
+        private Dictionary<string, SingleImpedanceMeasurement> initialMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
+        private Dictionary<string, SingleImpedanceMeasurement> currentMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
+        private Dictionary<string, List<SingleImpedanceMeasurement>> currentMeasurementLists = new Dictionary<string, List<SingleImpedanceMeasurement>>
         {
-            {"N", new List<double>()},
-            {"E", new List<double>()},
-            {"S", new List<double>()},
-            {"W", new List<double>()},
-            {"B", new List<double>()},
-            {"T", new List<double>()}
+            {"N", new List<SingleImpedanceMeasurement>() },
+            {"E", new List<SingleImpedanceMeasurement>() },
+            {"S", new List<SingleImpedanceMeasurement>() },
+            {"W", new List<SingleImpedanceMeasurement>() },
+            {"B", new List<SingleImpedanceMeasurement>() },
+            {"T", new List<SingleImpedanceMeasurement>() },
+        };
+        private Dictionary<string, double> currentDepths = new Dictionary<string, double>
+        {
+            {"N", 0.0},
+            {"E", 0.0},
+            {"S", 0.0},
+            {"W", 0.0},
+            {"B", 0.0},
+            {"T", 0.0}
         };
         private System.Threading.Timer collectionTimer;
         private bool collectData = false;
+        private bool initialMeasurementsCalculated = false;
         private object _syncLock = new object();
         private bool usingExternalElectrodes;
         private enum measurementState { PreInitial, Initial, InAblation };
@@ -1415,6 +1439,7 @@ namespace NsfSwitchControl
             if (!IMCQueue.IsEmpty)
             {
                 DataRow inData;
+                // TODO: correct data so all side is assigned to neg and everyhting else is poss
                 List<SingleImpedanceMeasurement> incomingMeasurements = new List<SingleImpedanceMeasurement>();
                 while (IMCQueue.TryDequeue(out inData)) { // grab all we can greedily
                     incomingMeasurements.Add(new SingleImpedanceMeasurement(inData));
@@ -1428,18 +1453,56 @@ namespace NsfSwitchControl
                     currentState = measurementState.Initial;
                     foreach (SingleImpedanceMeasurement meas in incomingMeasurements)
                     {
-                        initialMeasurements[meas.side].Add(meas);
+                        initialMeasurementLists[meas.side].Add(meas);
                     }
-                    // TODO: actually, we should be averaging the initial measurements, whoops.
-                    //       Also this might be a problem with TC's code too, not sure if he's using all three...
-                    // We should also be doing the discard one, average two stuff
                 }
-                else
+                else // we are past the initial counts!
                 {
                     currentState = measurementState.InAblation;
-                    // TODO: check the lastDepths to get the correct requests,
-                    //       send the correct requests to the svmServer,
-                    //       get back responses, then update the lastDepths
+                    if (!initialMeasurementsCalculated) // we need to compute the initial measurements the first time around
+                    {
+                        foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> entry in initialMeasurementLists)
+                        {
+                            initialMeasurements[entry.Key] = DiscardAndAverage(entry.Value);
+                        }
+                    }
+                    else
+                    {
+                        // place the incoming measurement in the correct place
+                        foreach (SingleImpedanceMeasurement incomingMeasurement in incomingMeasurements)
+                        {
+                            currentMeasurementLists[incomingMeasurement.neg].Add(incomingMeasurement);
+                        }
+                        foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> measurements in currentMeasurementLists)
+                        {
+                            if (measurements.Value.Count == 3)
+                            {
+                                // We send a query of the following type: '<time>,<side>,<pos>,<magn>,<phase>,<init_magn>,<init_phase>'
+                                // and expect a response of the following type: '<side>,<depth>'
+                                List<string> outgoingQueryItems = new List<string>();
+                                currentMeasurements[measurements.Key] = DiscardAndAverage(measurements.Value);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].time);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].neg);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].pos);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].magn);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].phase);
+                                outgoingQueryItems.Add(initialMeasurements[measurements.Key].magn);
+                                outgoingQueryItems.Add(initialMeasurements[measurements.Key].phase);
+                                string outgoingQuery = String.Join(",", outgoingQueryItems);
+                                socket.SendFrame(outgoingQuery);
+
+                                string reply = socket.ReceiveFrameString();
+                                string[] replySplit = reply.Split(',');
+                                if (measurements.Key == replySplit[0])
+                                    currentDepths[measurements.Key] = Double.Parse(replySplit[1]);
+                                else
+                                    throw new ValueUnavailableException();
+
+                                // dump the list, since it's no longer valid (we don't want the next measurement to count)
+                                currentMeasurementLists[measurements.Key] = new List<SingleImpedanceMeasurement>();
+                            }
+                        }
+                    }
                 }
             }
             else if (!collectData)
@@ -1452,15 +1515,20 @@ namespace NsfSwitchControl
 
         public Dictionary<string, double> GetDepths()
         {
-            Dictionary<string, double> returnDict = new Dictionary<string, double>();
-            foreach (KeyValuePair<string, List<double>> entry in lastDepths)
-            {
-                returnDict.Add(entry.Key, DiscardAndAverage(entry.Value));
-            }
-            return returnDict;
+            return lastDepths;
         }
 
-        private double DiscardAndAverage(List<double> inList)
+        private SingleImpedanceMeasurement DiscardAndAverage(List<SingleImpedanceMeasurement> inList)
+        {
+            if (inList.Count < 3)
+                throw new ValueUnavailableException();
+            double temp_magn = DiscardAndAverageGeneric(new List<double> { Double.Parse(inList[0].magn), Double.Parse(inList[1].magn), Double.Parse(inList[2].magn) });
+            double temp_phase = DiscardAndAverageGeneric(new List<double> { Double.Parse(inList[0].phase), Double.Parse(inList[1].phase), Double.Parse(inList[2].phase) });
+            double temp_temp; // TODO: have to get temperature (interpolated) inserted into this somehow later...
+            return new SingleImpedanceMeasurement(inList[0].neg, inList[0].pos, inList[0].neg, inList[2].time, ((decimal)temp_magn).ToString(), ((decimal)temp_phase).ToString());
+        }
+
+        private double DiscardAndAverageGeneric(List<double> inList)
         {
             if (inList.Count < 3)
                 throw new ValueUnavailableException();
