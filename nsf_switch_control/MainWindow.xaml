@@ -49,6 +49,8 @@
         <Grid Height="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -65,7 +67,8 @@
             <ListBox x:Name="listBoxFourthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="3" />
             <ListBox x:Name="listBoxFifthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="4" />
             <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="5" />
-            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="0" Grid.Column="6" />
+            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="1" Grid.Column="0" />
+            <CheckBox Content="Use Depth Controller?" x:Name="checkBoxDepthController" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" />
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
             <Grid.RowDefinitions>

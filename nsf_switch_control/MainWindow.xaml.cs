@@ -898,7 +898,6 @@ namespace NsfSwitchControl
 
 		private bool useExternalElectrodes = false;
 		private const int __preAblationMilliseconds = 5000;
-		private Random rseed = new Random();
 
 		static private Dictionary<string, Tuple<string, List<string>, List<string>>> __electrodeGroups = new Dictionary<string, Tuple<string, List<string>, List<string>>>
 		{
@@ -1278,7 +1277,7 @@ namespace NsfSwitchControl
 		}
 
 
-		// TODO: each selector also has the targets for its side_codes
+		// TODO: each selector also needs to have the targets for its side_codes if using depth controller
 		public void SetActiveAblationSides(List<string> inAblationSides)
 		{
 			foreach (string side_code in inAblationSides)
@@ -1455,7 +1454,7 @@ namespace NsfSwitchControl
 		{
 			string currentDate = DateTime.Now.ToString("yyyy-MM-dd");
 			string currentTime = (DateTime.Now - __recordingStartTime).TotalSeconds.ToString(); //DateTime.Now.ToString("hh:mm:ss.fff");
-			string posCode = String.Join(".", permutation["PositiveCode"]); // TODO: this might not be right
+			string posCode = String.Join(".", permutation["PositiveCode"]);
 			//string posCode = permutation["PositiveCode"][0];
 			string negCode = permutation["NegativeCode"][0];
 			string lineToWrite = currentDate + "," + currentTime + "," + posCode + "," + negCode + "," + impedance + "," + phase;
