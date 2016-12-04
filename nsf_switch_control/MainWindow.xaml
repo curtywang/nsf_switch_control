@@ -108,23 +108,23 @@
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="0">
                 <Label x:Name="__titleNAblationDepth" Content="N Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <Label x:Name="labelNAblationDepth" Width="Auto" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInlabel" Content="0.0" />
+                <Label x:Name="labelNAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="1">
                 <Label x:Name="__titleEAblationDepth" Content="E Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <Label x:Name="labelEAblationDepth" Width="Auto" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInlabel" Content="0.0" />
+                <Label x:Name="labelEAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="2">
                 <Label x:Name="__titleSAblationDepth" Content="S Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <Label x:Name="labelSAblationDepth" Width="Auto" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInlabel" Content="0.0" />
+                <Label x:Name="labelSAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="3">
                 <Label x:Name="__titleWAblationDepth" Content="W Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <Label x:Name="labelWAblationDepth" Width="Auto" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInlabel" Content="0.0" />
+                <Label x:Name="labelWAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="4">
                 <Label x:Name="__titleBAblationDepth" Content="B Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <Label x:Name="labelBAblationDepth" Width="Auto" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInlabel" Content="0.0" />
+                <Label x:Name="labelBAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
             </WrapPanel>
         </Grid>
         <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,5">
