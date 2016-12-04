@@ -1343,6 +1343,8 @@ namespace NsfSwitchControl
 		{
 			imcState = imcStatusEnum.preAblation;
 			__recordingStartTime = DateTime.Now;
+            if (usingDepthController)
+                depthController.Start();
 			collectionTimer = new System.Threading.Timer(collectCallback, this, 0, System.Threading.Timeout.Infinite);
 			return false;
 		}
@@ -1351,6 +1353,9 @@ namespace NsfSwitchControl
 		public bool StopCollection()
 		{
 			imcState = imcStatusEnum.isStopped;
+            if (usingDepthController)
+                depthController.Stop();
+            depthController = null;
 			swMatCont.DisconnectAll();
 			return false;
 		}
