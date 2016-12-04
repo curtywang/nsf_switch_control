@@ -1096,7 +1096,8 @@ namespace NsfSwitchControl
 				// now that we have the diffs, we can adjust each side if we know which ablation group is in what
 				foreach (AblationGroup group in imcLink.ablationSwitchGroups)
 				{
-					// TODO: Update intervals here, set to 0 and active to false if we're done
+					// TODO: Update intervals here, set active to false if we're done
+                    //       otherwise the countLimit is going to be 0 no matter waht
 				}
 			}
 
@@ -1289,8 +1290,8 @@ namespace NsfSwitchControl
 
 		public void SetBaseAblationCountLimits(int inLimit)
 		{
-			if (usingDepthController)
-				throw new Exception("Cannot set initial ablation times if using depth controller!");
+            if (usingDepthController)
+                inLimit = 0;
 			foreach (AblationGroup group in ablationSwitchGroups)
 			{
 				if (group.activeSides.Count > 1)
@@ -1301,30 +1302,31 @@ namespace NsfSwitchControl
 		}
 
 
-		// TODO: each selector also needs to have the targets for its side_codes if using depth controller
 		public void SetActiveAblationSides(List<string> inAblationSides)
 		{
-			foreach (string side_code in inAblationSides)
-			{
-				// each side_code is a string that we can split using ','
-				if (side_code.Length < 1)
-					continue;
-				string[] codes = side_code.Split(',');
-				AblationGroup group = new AblationGroup();
-				group.activeSides = new List<string>(codes);
-				group.active = true;
-				ablationSwitchGroups.Add(group);
-
-				/* this is wrong below 
-				foreach (AblationGroup group in ablationSwitchGroups)
-				{
-					if (group.activeSides.Contains(side_code))
-					{
-						group.active = true;
-					}
-				}
-				*/
-			}
+            if (usingDepthController)
+            {
+                foreach (string code in new List<string> { "N", "E", "S", "W", "B"}) {
+                    AblationGroup group = new AblationGroup();
+                    group.activeSides = new List<string> { code };
+                    group.active = true;
+                    ablationSwitchGroups.Add(group);
+                }
+            }
+            else
+            {
+                foreach (string side_code in inAblationSides)
+                {
+                    // each side_code is a string that we can split using ','
+                    if (side_code.Length < 1)
+                        continue;
+                    string[] codes = side_code.Split(',');
+                    AblationGroup group = new AblationGroup();
+                    group.activeSides = new List<string>(codes);
+                    group.active = true;
+                    ablationSwitchGroups.Add(group);
+                }
+            }
 		}
 
 
