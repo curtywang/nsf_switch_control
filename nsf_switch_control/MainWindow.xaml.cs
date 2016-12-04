@@ -1096,8 +1096,11 @@ namespace NsfSwitchControl
 				// now that we have the diffs, we can adjust each side if we know which ablation group is in what
 				foreach (AblationGroup group in imcLink.ablationSwitchGroups)
 				{
-					// TODO: Update intervals here, set active to false if we're done
-                    //       otherwise the countLimit is going to be 0 no matter waht
+                    // TODO: Update intervals here, set active to false if we're done
+                    if ((diffDepths[group.activeSides[0]] > 2.0) && (group.active == true))
+                        group.active = true;
+                    else
+                        group.active = false;
 				}
 			}
 
