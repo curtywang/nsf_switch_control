@@ -145,8 +145,15 @@ namespace NsfSwitchControl
 		{
 			if (textboxFolderPath.Text != "" && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
 			{
-				int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
-				int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
+				Dictionary<string, double> ablationTargetDepths = new Dictionary<string, double> {
+                    { "N", double.Parse(textboxNAblationTarget.Text) },
+                    { "E", double.Parse(textboxEAblationTarget.Text) },
+                    { "S", double.Parse(textboxSAblationTarget.Text) },
+                    { "W", double.Parse(textboxWAblationTarget.Text) },
+                    { "B", double.Parse(textboxBAblationTarget.Text) },
+                };
+                int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
+                int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
 				impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
 
 				string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
@@ -160,6 +167,8 @@ namespace NsfSwitchControl
 				impMeasCont.SetActiveAblationSides(finalAblationList);
 				impMeasCont.SetBaseAblationCountLimits(totalNumberOfImpMeasSamples);
 				impMeasCont.SetBaseAblationDurations(impedanceMeasurementInterval);
+                impMeasCont.SetTargetDepths(ablationTargetDepths);
+                impMeasCont.SetUseDepthController(checkBoxDepthController.IsChecked);
 
 				tempMeasCont.StartMeasurement();
 				if (tempMeasContTop != null)
@@ -1188,11 +1197,26 @@ namespace NsfSwitchControl
 		}
 
 
-		public void SetUseDepthController()
+		public void SetUseDepthController(bool? checkboxValue)
 		{
-			usingDepthController = true;
-			depthController = new DepthController(OutputQueue, false, ">tcp://localhost:5555", this);
+            bool checkedUse;
+            if (checkboxValue == null || checkboxValue == false)
+                checkedUse = false;
+            else
+                checkedUse = true;
+            useExternalElectrodes = checkedUse;
+            if (useExternalElectrodes)
+            {
+                usingDepthController = true;
+                depthController = new DepthController(OutputQueue, false, ">tcp://localhost:5555", this);
+            }
 		}
+
+
+        public void SetTargetDepths(Dictionary<string, double> inputTargetDepths)
+        {
+            targetDepths = inputTargetDepths;
+        }
 
 
 		private void AddImpedanceSwitchGroup(string side, Tuple<string, List<string>, List<string>> group)
@@ -1338,6 +1362,7 @@ namespace NsfSwitchControl
 					break;
 				case imcStatusEnum.inAblation:
 					AblationGroup ag_dequeued = activeAblationGroupQueue.Dequeue();
+                    currentAblationGroup = ag_dequeued;
 					if (imcState == imcStatusEnum.inAblation)
 					{
 						swMatCont.Connect(ag_dequeued.ToDictionary(), true);
@@ -1376,7 +1401,7 @@ namespace NsfSwitchControl
 					bool groupsLeftToAblate = false;
 					foreach (AblationGroup ag in ablationSwitchGroups)
 					{
-						if (ag.active && (ag.countUsage < ag.countLimit))
+						if (ag.active && ((ag.countUsage < ag.countLimit) || (ag.countLimit == 0)))
 						{
 							groupsLeftToAblate = true;
 							ag.countUsage += 1;
