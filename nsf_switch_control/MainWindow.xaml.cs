@@ -178,7 +178,12 @@ namespace NsfSwitchControl
 				elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
 				{
 					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Ablation Group: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
-					if (impMeasCont.IsComplete())
+                    labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
+                    labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E");
+                    labelSAblationDepth.Content = impMeasCont.GetCurrentDepth("S");
+                    labelWAblationDepth.Content = impMeasCont.GetCurrentDepth("W");
+                    labelBAblationDepth.Content = impMeasCont.GetCurrentDepth("B");
+                    if (impMeasCont.IsComplete())
 						StopCollection(true);
 				}, this.Dispatcher);
 				buttonStartCollection.IsEnabled = false;
@@ -1199,6 +1204,12 @@ namespace NsfSwitchControl
 		{
 			return new List<string> { "N", "E", "S", "W", "B", "T" };
 		}
+
+
+        public double GetCurrentDepth(string side)
+        {
+            return depthController.GetDepths()[side];
+        }
 
 
 		public void SetUseDepthController(bool? checkboxValue)
