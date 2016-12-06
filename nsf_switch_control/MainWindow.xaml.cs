@@ -177,7 +177,7 @@ namespace NsfSwitchControl
 				startDateTime = DateTime.Now;
 				elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
 				{
-					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Ablation Group: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
+					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Current Ablation Group: " + impMeasCont.GetCurrentAblationGroupSideAndCount().Item1 + ", Ablation Groups: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
                     if (checkBoxExternalElectrodes.IsChecked == true)
                     {
                         labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
