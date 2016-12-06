@@ -559,6 +559,8 @@ namespace NsfSwitchControl
             // TODO: Does the number of samples of single groups have to add up to the total of the double groups?
             for (int i = 0; i < ablationSwitchGroups.Count; i++)
             {
+                if ((ablationSwitchGroups[i]["Positive"].Count) <= 4)
+                    inTotalNumber *= 2;
                 __totalNumberOfSamples.Add(inTotalNumber);
                 __currentNumberOfSamples.Add(0);
             }
@@ -907,7 +909,7 @@ namespace NsfSwitchControl
         private NationalInstruments.Visa.MessageBasedSession mbSession;
         public bool IsEnabled;
 
-        private const string __lcrMeterPort = "ASRL4::INSTR";
+        private const string __lcrMeterPort = "ASRL5::INSTR";
         private const int __lcrFrequency = 100000;
         private const string __termchar = "\r";
 
