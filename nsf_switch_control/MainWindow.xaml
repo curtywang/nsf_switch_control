@@ -7,31 +7,27 @@
         mc:Ignorable="d"
         Title="IDI-NU Temperature-Impedance Measurement Switching Controller" Height="Auto" Width="800">
     <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Height="Auto">
-        <Grid Height="Auto" Margin="0,0,0,25">
+        <Grid Height="Auto" Margin="0,0,0,5">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-                <!--<ColumnDefinition Width="140"/>-->
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Label x:Name="__titleHardwareStatusLabel" Content="Hardware Connection Status" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" FontWeight="Bold" />
-            <Label x:Name="__titleSwitchLabel" Content="Matrix Switch:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="0" />
-            <Label x:Name="__titleTemperatureLabel" Content="Temperature Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
-            <Label x:Name="__titleImpedanceLabel" Content="Impedance Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
-            <Label x:Name="labelSwitchConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="1" Grid.Column="1" />
-            <Label x:Name="labelTemperatureConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" />
-            <Label x:Name="labelImpedanceConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="1" />
+            <Label x:Name="__titleSwitchLabel" Content="Matrix Switch:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
+            <Label x:Name="labelSwitchConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" />
+            <Label x:Name="__titleTemperatureLabel" Content="Temperature Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="2" />
+            <Label x:Name="labelTemperatureConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="3" />
+            <Label x:Name="__titleImpedanceLabel" Content="Impedance Meter:" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="4" />
+            <Label x:Name="labelImpedanceConnectionStatus" Content="Label" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="5" />
         </Grid>
-        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="25,0,0,0">
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -46,8 +42,9 @@
             <Button Content="Select Folder..." Grid.Row="0" Grid.Column="2" Click="Button_Click" VerticalAlignment="Center" />
             <Button x:Name="buttonInitializeControllers" Content="Initialize Controllers" Grid.Row="0" Grid.Column="3" IsEnabled="False" Margin="50,0" Click="buttonInitializeControllers_Click" />
         </Grid>
-        <Grid Height="Auto" Margin="0,0,0,25">
+        <Grid Height="Auto" Margin="0,0,0,5">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
@@ -55,14 +52,84 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <ListBox x:Name="listBoxFirstAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" />
             <ListBox x:Name="listBoxSecondAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="1" />
-            <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="2" />
-            <CheckBox Content="Use External Electrodes?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="0" Grid.Column="3" />
+            <ListBox x:Name="listBoxThirdAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="2" />
+            <ListBox x:Name="listBoxFourthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="3" />
+            <ListBox x:Name="listBoxFifthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="4" />
+            <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="5" />
         </Grid>
-        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,25">
+        <Grid Height="Auto" Margin="0,0,0,5">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <CheckBox Content="Use ENE Electrode?" x:Name="checkBoxExternalElectrodes" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="0" Grid.Column="0" />
+            <CheckBox Content="Use Depth Controller? (If checked, ablation groups up top are ignored.)" x:Name="checkBoxDepthController" HorizontalAlignment="Left" VerticalAlignment="Bottom" Grid.Row="1" Grid.Column="0" />
+        </Grid>
+        <Grid Height="Auto" Margin="0,0,0,5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <WrapPanel Grid.Row="0" Grid.Column="0">
+                <Label x:Name="__titleNAblationTarget" Content="N Target mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxNAblationTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="0" Grid.Column="1">
+                <Label x:Name="__titleEAblationTarget" Content="E Target mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxEAblationTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="0" Grid.Column="2">
+                <Label x:Name="__titleSAblationTarget" Content="S Target mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxSAblationTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="0" Grid.Column="3">
+                <Label x:Name="__titleWAblationTarget" Content="W Target mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxWAblationTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="0" Grid.Column="4">
+                <Label x:Name="__titleBAblationTarget" Content="B Target mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxBAblationTarget" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="0">
+                <Label x:Name="__titleNAblationDepth" Content="N Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelNAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="1">
+                <Label x:Name="__titleEAblationDepth" Content="E Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelEAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="2">
+                <Label x:Name="__titleSAblationDepth" Content="S Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelSAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="3">
+                <Label x:Name="__titleWAblationDepth" Content="W Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelWAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="4">
+                <Label x:Name="__titleBAblationDepth" Content="B Depth mm:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="labelBAblationDepth" Width="Auto" VerticalAlignment="Center" Content="0.0" />
+            </WrapPanel>
+        </Grid>
+        <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Width="Auto" Margin="0,0,0,5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -72,14 +139,14 @@
             </Grid.ColumnDefinitions>
             <WrapPanel Grid.Row="0" Grid.Column="0">
                 <Label x:Name="__titleImpMeasIntervalDesired" Content="Ablation active time per interval (secs):" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="120" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+                <TextBox x:Name="textboxImpMeasIntervalDesired" Width="Auto" Text="30" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
             </WrapPanel>
             <WrapPanel Grid.Row="0" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <Label x:Name="labelControllerStatus" Content="Uninitialized" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="0">
-                <Label x:Name="__titleImpMeasSamplesDesired" Content="Desired Number of Imp. Measurements:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <Label x:Name="__titleImpMeasSamplesDesired" Content="Desired Number of Ablation Intervals:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
             </WrapPanel>
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
