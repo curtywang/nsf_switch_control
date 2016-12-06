@@ -178,11 +178,22 @@ namespace NsfSwitchControl
 				elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
 				{
 					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Ablation Group: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
-                    labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
-                    labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E");
-                    labelSAblationDepth.Content = impMeasCont.GetCurrentDepth("S");
-                    labelWAblationDepth.Content = impMeasCont.GetCurrentDepth("W");
-                    labelBAblationDepth.Content = impMeasCont.GetCurrentDepth("B");
+                    if (checkBoxExternalElectrodes.IsChecked == true)
+                    {
+                        labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
+                        labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E");
+                        labelSAblationDepth.Content = impMeasCont.GetCurrentDepth("S");
+                        labelWAblationDepth.Content = impMeasCont.GetCurrentDepth("W");
+                        labelBAblationDepth.Content = impMeasCont.GetCurrentDepth("B");
+                    }
+                    else
+                    {
+                        labelNAblationDepth.Content = "N/A";
+                        labelEAblationDepth.Content = "N/A";
+                        labelSAblationDepth.Content = "N/A";
+                        labelWAblationDepth.Content = "N/A";
+                        labelBAblationDepth.Content = "N/A";
+                    }
                     if (impMeasCont.IsComplete())
 						StopCollection(true);
 				}, this.Dispatcher);
@@ -410,7 +421,7 @@ namespace NsfSwitchControl
 		private NationalInstruments.Visa.MessageBasedSession mbSession;
 		public bool IsEnabled;
 
-		private const string __lcrMeterPort = "ASRL4::INSTR";
+		private const string __lcrMeterPort = "ASRL5::INSTR";
 		private const int __lcrFrequency = 100000;
 		private const string __termchar = "\r";
 
@@ -916,12 +927,12 @@ namespace NsfSwitchControl
 		static private Dictionary<string, Tuple<string, List<string>, List<string>>> __electrodeGroups = new Dictionary<string, Tuple<string, List<string>, List<string>>>
 		{
 			// each side has its opposite, its connections, its opp-connections
-			{"N", new Tuple<string, List<string>, List<string>>("T.E.B.W", new List<string>{ "c0", "c1", "c2", "c3" }, new List<string>() ) },
-			{"E", new Tuple<string, List<string>, List<string>>("T.N.B.S", new List<string>{ "c4", "c5", "c6", "c7" }, new List<string>() ) },
-			{"S", new Tuple<string, List<string>, List<string>>("T.E.B.W", new List<string>{ "c8", "c9", "c10", "c11" }, new List<string>() ) },
-			{"W", new Tuple<string, List<string>, List<string>>("T.N.B.S", new List<string>{ "c12", "c13", "c14", "c15" }, new List<string>() ) },
-			{"B", new Tuple<string, List<string>, List<string>>("N.E.S.W", new List<string>{ "c16", "c17", "c18", "c19" }, new List<string>() ) },
-			{"T", new Tuple<string, List<string>, List<string>>("N.E.S.W", new List<string>{ "c20" } , new List<string>() ) },
+			{"N", new Tuple<string, List<string>, List<string>>("T.E.B.W", new List<string>{ "c0", "c1", "c2", "c3" }, new List<string>{ "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20" } ) },
+			{"E", new Tuple<string, List<string>, List<string>>("T.N.B.S", new List<string>{ "c4", "c5", "c6", "c7" }, new List<string>{ "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } ) },
+			{"S", new Tuple<string, List<string>, List<string>>("T.E.B.W", new List<string>{ "c8", "c9", "c10", "c11" }, new List<string>{ "c4", "c5", "c6", "c7", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20" } ) },
+			{"W", new Tuple<string, List<string>, List<string>>("T.N.B.S", new List<string>{ "c12", "c13", "c14", "c15" }, new List<string>{ "c0", "c1", "c2", "c3", "c8", "c9", "c10", "c11", "c16", "c17", "c18", "c19", "c20" } ) },
+			{"B", new Tuple<string, List<string>, List<string>>("N.E.S.W", new List<string>{ "c16", "c17", "c18", "c19" }, new List<string>{ "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15" } ) },
+			{"T", new Tuple<string, List<string>, List<string>>("N.E.S.W", new List<string>{ "c20" } , new List<string>{ "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15" } ) },
 			{"N-ENE", new Tuple<string, List<string>, List<string>>("ENE", new List<string>{ "c0", "c1", "c2", "c3" }, new List<string>{ "c24" } ) },
 			{"E-ENE", new Tuple<string, List<string>, List<string>>("ENE", new List<string>{ "c4", "c5", "c6", "c7" }, new List<string>{ "c24" } ) },
 			{"S-ENE", new Tuple<string, List<string>, List<string>>("ENE", new List<string>{ "c8", "c9", "c10", "c11" }, new List<string>{ "c24" } ) },
@@ -1176,7 +1187,7 @@ namespace NsfSwitchControl
 		private Dictionary<string, List<string>> preAblationSwitchGroup = new Dictionary<string, List<string>>
 		{
 			{"Positive", new List<string> { "c0", "c1", "c4", "c5", "c8", "c9", "c12", "c13", "c16", "c17", "c20" } },
-			{"Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c10", "c11", "c14", "c15", "c18", "c19" } }
+			{"Negative", new List<string> { "c2", "c3", "c6", "c7", "c10", "c11", "c14", "c15", "c18", "c19" } }
 		};
 
 		public ImpedanceMeasurementController(string saveFileLocation, MainWindow mainRefIn)
@@ -1308,7 +1319,7 @@ namespace NsfSwitchControl
                 inLimit = 0;
 			foreach (AblationGroup group in ablationSwitchGroups)
 			{
-				if (group.activeSides.Count > 1)
+                if (group.activeSides.Count > 1)
 					group.countLimit = inLimit;
 				else // we extend the number of counts to make up for less time
 					group.countLimit = 2 * inLimit;
@@ -1324,6 +1335,8 @@ namespace NsfSwitchControl
                     AblationGroup group = new AblationGroup();
                     group.activeSides = new List<string> { code };
                     group.active = true;
+                    group.posElectrodes = __electrodeGroups[code].Item2;
+                    group.negElectrodes = __electrodeGroups[code].Item3;
                     ablationSwitchGroups.Add(group);
                 }
             }
@@ -1338,6 +1351,15 @@ namespace NsfSwitchControl
                     AblationGroup group = new AblationGroup();
                     group.activeSides = new List<string>(codes);
                     group.active = true;
+                    group.posElectrodes = new List<string>();
+                    group.negElectrodes = new List<string>();
+                    foreach (string code in codes)
+                        group.posElectrodes.AddRange(__electrodeGroups[code].Item2);
+                    foreach (string opp_code in new List<string> { "N", "E", "S", "W", "B", "T" })
+                    {
+                        if (!codes.Contains(opp_code))
+                            group.negElectrodes.AddRange(__electrodeGroups[opp_code].Item2);
+                    }
                     ablationSwitchGroups.Add(group);
                 }
             }
