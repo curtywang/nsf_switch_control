@@ -164,11 +164,14 @@ namespace NsfSwitchControl
 				string lastAblationSides = String.Join(",", listBoxLastAblationSide.SelectedItems.OfType<string>().ToList());
 				List<string> finalAblationList = new List<string> { firstAblationSides, secondAblationSides, thirdAblationSides, fourthAblationSides, fifthAblationSides, lastAblationSides };
 
-				impMeasCont.SetActiveAblationSides(finalAblationList);
-				impMeasCont.SetBaseAblationCountLimits(totalNumberOfImpMeasSamples);
-				impMeasCont.SetBaseAblationDurations(impedanceMeasurementInterval);
-                impMeasCont.SetTargetDepths(ablationTargetDepths);
                 impMeasCont.SetUseDepthController(checkBoxDepthController.IsChecked);
+                impMeasCont.SetTargetDepths(ablationTargetDepths);
+                if (checkBoxDepthController.IsChecked == true)
+				    impMeasCont.SetActiveAblationSides();
+                else
+                    impMeasCont.SetActiveAblationSides(finalAblationList);
+                impMeasCont.SetBaseAblationCountLimits(totalNumberOfImpMeasSamples);
+				impMeasCont.SetBaseAblationDurations(impedanceMeasurementInterval);
 
 				tempMeasCont.StartMeasurement();
 				if (tempMeasContTop != null)
@@ -178,7 +181,7 @@ namespace NsfSwitchControl
 				elapsedTimer = new System.Windows.Threading.DispatcherTimer(new TimeSpan(0, 0, 0, 0, 500), System.Windows.Threading.DispatcherPriority.Normal, delegate
 				{
 					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Current Ablation Group: " + impMeasCont.GetCurrentAblationGroupSideAndCount().Item1 + ", Ablation Groups: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
-                    if (checkBoxExternalElectrodes.IsChecked == true)
+                    if (checkBoxDepthController.IsChecked == true)
                     {
                         labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
                         labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E");
@@ -944,7 +947,7 @@ namespace NsfSwitchControl
 		private class DepthController
 		{
 			private NetMQ.Sockets.RequestSocket socket;
-			private System.Collections.Concurrent.ConcurrentQueue<DataRow> IMCQueue;
+			private System.Collections.Concurrent.ConcurrentQueue<SingleImpedanceMeasurement> IMCQueue;
 			private Dictionary<string, List<SingleImpedanceMeasurement>> initialMeasurementLists = new Dictionary<string, List<SingleImpedanceMeasurement>>
 		    {
 			    {"N", new List<SingleImpedanceMeasurement>() },
@@ -986,16 +989,16 @@ namespace NsfSwitchControl
 			private int __nominalCount;
 			private ImpedanceMeasurementController imcLink;
 
-			public DepthController(System.Collections.Concurrent.ConcurrentQueue<DataRow> InputQueue, bool usingExternal, string svmServerAddress, ImpedanceMeasurementController theIMC)
+			public DepthController(System.Collections.Concurrent.ConcurrentQueue<SingleImpedanceMeasurement> InputQueue, bool usingExternal, string svmServerAddress, ImpedanceMeasurementController theIMC)
 			{
 				socket = new NetMQ.Sockets.RequestSocket(svmServerAddress);
 				IMCQueue = InputQueue;
 				usingExternalElectrodes = usingExternal;
 				imcLink = theIMC;
 				if (usingExternalElectrodes)
-					__nominalCount = 30; // 5 measurements per measurement block, extra 5 measurements per measurement block, 3 blocks per measurement instance
+					__nominalCount = 36; // 5 measurements per measurement block, extra 5 measurements per measurement block, 3 blocks per measurement instance
 				else
-					__nominalCount = 15;
+					__nominalCount = 18;
 			}
 
 			public bool Start()
@@ -1021,72 +1024,85 @@ namespace NsfSwitchControl
 			{
 				if (!IMCQueue.IsEmpty)
 				{
-					DataRow inData;
+					SingleImpedanceMeasurement inData;
 					List<SingleImpedanceMeasurement> incomingMeasurements = new List<SingleImpedanceMeasurement>();
 					while (IMCQueue.TryDequeue(out inData))
 					{ // grab all we can greedily
-						incomingMeasurements.Add(new SingleImpedanceMeasurement(inData));
+						incomingMeasurements.Add(inData);
 					}
-					numberOfMeasurements += incomingMeasurements.Count;
 
-					if (numberOfMeasurements < __nominalCount)
-						currentState = measurementState.PreInitial;
-					else if (numberOfMeasurements < (2 * __nominalCount))
-					{
-						currentState = measurementState.Initial;
-						foreach (SingleImpedanceMeasurement meas in incomingMeasurements)
-						{
-							initialMeasurementLists[meas.side].Add(meas);
-						}
-					}
-					else // we are past the initial counts!
-					{
-						currentState = measurementState.InAblation;
-						if (!initialMeasurementsCalculated) // we need to compute the initial measurements the first time around
-						{
-							foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> entry in initialMeasurementLists)
-							{
-								initialMeasurements[entry.Key] = DiscardAndAverage(entry.Value);
-							}
-						}
-						else
-						{
-							// place the incoming measurement in the correct place
-							foreach (SingleImpedanceMeasurement incomingMeasurement in incomingMeasurements)
-							{
-								currentMeasurementLists[incomingMeasurement.neg].Add(incomingMeasurement);
-							}
-							foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> measurements in currentMeasurementLists)
-							{
-								if (measurements.Value.Count == 3)
-								{
-									// We send a query of the following type: '<time>,<side>,<pos>,<magn>,<phase>,<init_magn>,<init_phase>'
-									// and expect a response of the following type: '<side>,<depth>'
-									List<string> outgoingQueryItems = new List<string>();
-									currentMeasurements[measurements.Key] = DiscardAndAverage(measurements.Value);
-									outgoingQueryItems.Add(currentMeasurements[measurements.Key].time);
-									outgoingQueryItems.Add(currentMeasurements[measurements.Key].neg);
-									outgoingQueryItems.Add(currentMeasurements[measurements.Key].pos);
-									outgoingQueryItems.Add(currentMeasurements[measurements.Key].magn);
-									outgoingQueryItems.Add(currentMeasurements[measurements.Key].phase);
-									outgoingQueryItems.Add(initialMeasurements[measurements.Key].magn);
-									outgoingQueryItems.Add(initialMeasurements[measurements.Key].phase);
-									string outgoingQuery = String.Join(",", outgoingQueryItems);
-									socket.SendFrame(outgoingQuery);
+                    if (numberOfMeasurements < __nominalCount)
+                    {
+                        currentState = measurementState.Initial;
+                        numberOfMeasurements += incomingMeasurements.Count;
+                        foreach (SingleImpedanceMeasurement meas in incomingMeasurements)
+                        {
+                            initialMeasurementLists[meas.side].Add(meas);
+                        }
+                        //if (numberOfMeasurements == __nominalCount) {
+                        //    //imcLink.activeAblationGroupQueue.Enqueue(imcLink.ablationSwitchGroups)
+                        //    imcLink.ablationSwitchGroups.ForEach(imcLink.activeAblationGroupQueue.Enqueue);
+                        //}
+                    }
+                    //else if (numberOfMeasurements < (2 * __nominalCount))
+                    //{
+                    //	currentState = measurementState.Initial;
+                    //	foreach (SingleImpedanceMeasurement meas in incomingMeasurements)
+                    //	{
+                    //		initialMeasurementLists[meas.side].Add(meas);
+                    //	}
+                    //}
+                    else // we are past the initial counts!
+                    {
+                        currentState = measurementState.InAblation;
+                        if (!initialMeasurementsCalculated) // we need to compute the initial measurements the first time around
+                        {
+                            foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> entry in initialMeasurementLists)
+                            {
+                                initialMeasurements[entry.Key] = DiscardAndAverage(entry.Value);
+                            }
+                            initialMeasurementsCalculated = true;
+                        }
+                        // place the incoming measurement in the correct place
+                        foreach (SingleImpedanceMeasurement incomingMeasurement in incomingMeasurements)
+                        {
+                            currentMeasurementLists[incomingMeasurement.neg].Add(incomingMeasurement);
+                        }
+                        foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> measurements in currentMeasurementLists)
+                        {
+                            if (measurements.Value.Count == 3)
+                            {
+                                // We send a query of the following type: '<time>,<side>,<pos>,<magn_change>,<phase_change>,<init_magn>,<init_phase>'
+                                // and expect a response of the following type: '<side>,<depth>'
+                                List<string> outgoingQueryItems = new List<string>();
+                                currentMeasurements[measurements.Key] = DiscardAndAverage(measurements.Value);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].time);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].neg);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].pos);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].magn);
+                                outgoingQueryItems.Add(currentMeasurements[measurements.Key].phase);
+                                outgoingQueryItems.Add(initialMeasurements[measurements.Key].magn);
+                                outgoingQueryItems.Add(initialMeasurements[measurements.Key].phase);
+                                string outgoingQuery = String.Join(",", outgoingQueryItems);
+                                socket.SendFrame(outgoingQuery);
 
-									string reply = socket.ReceiveFrameString();
-									string[] replySplit = reply.Split(',');
-									if (measurements.Key == replySplit[0])
-										currentDepths[measurements.Key] = Double.Parse(replySplit[1]);
-									else
-										throw new ValueUnavailableException();
+                                string reply = socket.ReceiveFrameString();
+                                string[] replySplit = reply.Split(',');
+                                if (measurements.Key == replySplit[0])
+                                {
+                                    double newDepth = Double.Parse(replySplit[1]);
+                                    if (newDepth >= currentDepths[measurements.Key])
+                                        currentDepths[measurements.Key] = newDepth;
+                                }
+                                else
+                                    throw new ValueUnavailableException();
 
-									// dump the list, since it's no longer valid (we don't want the next measurement to count)
-									currentMeasurementLists[measurements.Key] = new List<SingleImpedanceMeasurement>();
-								}
-							}
-						}
-					}
+                                // dump the list, since it's no longer valid (we don't want the next measurement to count)
+                                currentMeasurementLists[measurements.Key].Clear(); //= new List<SingleImpedanceMeasurement>();
+                            }
+                        }
+                        UpdateAblationIntervals();
+                    }
 				}
 				else if (!collectData)
 				{
@@ -1162,7 +1178,7 @@ namespace NsfSwitchControl
 
 		private bool usingDepthController = false;
 		private DepthController depthController;
-		public System.Collections.Concurrent.ConcurrentQueue<DataRow> OutputQueue = new System.Collections.Concurrent.ConcurrentQueue<DataRow>();
+		public System.Collections.Concurrent.ConcurrentQueue<SingleImpedanceMeasurement> OutputQueue = new System.Collections.Concurrent.ConcurrentQueue<SingleImpedanceMeasurement>();
 		private Dictionary<string, double> targetDepths = new Dictionary<string, double>
 		{
 			{"N", 0.0},
@@ -1302,15 +1318,24 @@ namespace NsfSwitchControl
 
 		public void SetBaseAblationDurations(int inDuration)
 		{
-			int baseInterval = inDuration * 1000;
-			foreach (AblationGroup group in ablationSwitchGroups)
-			{
-				if (group.activeSides.Count > 1)
-					group.activeDuration = baseInterval;
-				else // we do less time to avoid too much power deposition
-					group.activeDuration = baseInterval / 10;
-			}
-		}
+            if (!usingDepthController)
+            {
+                int baseInterval = inDuration * 1000;
+                foreach (AblationGroup group in ablationSwitchGroups)
+                {
+                    if (group.activeSides.Count > 1)
+                        group.activeDuration = baseInterval;
+                    else // we do less time to avoid too much power deposition
+                        group.activeDuration = baseInterval / 10;
+                }
+            }
+            else
+            {
+                int baseInterval = inDuration * 1000;
+                foreach (AblationGroup group in ablationSwitchGroups)
+                    group.activeDuration = baseInterval;
+            }
+        }
 
 
 		public void SetBaseAblationCountLimits(int inLimit)
@@ -1327,11 +1352,11 @@ namespace NsfSwitchControl
 		}
 
 
-		public void SetActiveAblationSides(List<string> inAblationSides)
-		{
+        public void SetActiveAblationSides() {
             if (usingDepthController)
             {
-                foreach (string code in new List<string> { "N", "E", "S", "W", "B"}) {
+                foreach (string code in new List<string> { "N", "E", "S", "W", "B" })
+                {
                     AblationGroup group = new AblationGroup();
                     group.activeSides = new List<string> { code };
                     group.active = true;
@@ -1340,35 +1365,40 @@ namespace NsfSwitchControl
                     ablationSwitchGroups.Add(group);
                 }
             }
-            else
+        }
+
+
+		public void SetActiveAblationSides(List<string> inAblationSides)
+		{
+            foreach (string side_code in inAblationSides)
             {
-                foreach (string side_code in inAblationSides)
+                // each side_code is a string that we can split using ','
+                if (side_code.Length < 1)
+                    continue;
+                string[] codes = side_code.Split(',');
+                AblationGroup group = new AblationGroup();
+                group.activeSides = new List<string>(codes);
+                group.active = true;
+                group.posElectrodes = new List<string>();
+                group.negElectrodes = new List<string>();
+                foreach (string code in codes)
+                    group.posElectrodes.AddRange(__electrodeGroups[code].Item2);
+                foreach (string opp_code in new List<string> { "N", "E", "S", "W", "B", "T" })
                 {
-                    // each side_code is a string that we can split using ','
-                    if (side_code.Length < 1)
-                        continue;
-                    string[] codes = side_code.Split(',');
-                    AblationGroup group = new AblationGroup();
-                    group.activeSides = new List<string>(codes);
-                    group.active = true;
-                    group.posElectrodes = new List<string>();
-                    group.negElectrodes = new List<string>();
-                    foreach (string code in codes)
-                        group.posElectrodes.AddRange(__electrodeGroups[code].Item2);
-                    foreach (string opp_code in new List<string> { "N", "E", "S", "W", "B", "T" })
-                    {
-                        if (!codes.Contains(opp_code))
-                            group.negElectrodes.AddRange(__electrodeGroups[opp_code].Item2);
-                    }
-                    ablationSwitchGroups.Add(group);
+                    if (!codes.Contains(opp_code))
+                        group.negElectrodes.AddRange(__electrodeGroups[opp_code].Item2);
                 }
+                ablationSwitchGroups.Add(group);
             }
 		}
 
 
 		public Tuple<string, int> GetCurrentAblationGroupSideAndCount()
 		{
-			return new Tuple<string, int>(String.Join("+", currentAblationGroup.activeSides), currentAblationGroup.countUsage);
+            if (currentAblationGroup == null)
+                return new Tuple<string, int>("None", -99);
+            else
+			    return new Tuple<string, int>(String.Join("+", currentAblationGroup.activeSides), currentAblationGroup.countUsage);
 		}
 
 
@@ -1536,7 +1566,7 @@ namespace NsfSwitchControl
 			dataRow[4] = impedance;
 			dataRow[5] = phase;
 
-			OutputQueue.Enqueue(dataRow);
+			OutputQueue.Enqueue(new SingleImpedanceMeasurement(dataRow));
 
 			lock (_syncLock)
 			{
