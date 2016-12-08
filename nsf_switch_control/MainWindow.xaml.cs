@@ -1092,8 +1092,7 @@ namespace NsfSwitchControl
                                 if (measurements.Key == replySplit[0])
                                 {
                                     double newDepth = Double.Parse(replySplit[1]);
-                                    if (newDepth >= currentDepths[measurements.Key])
-                                        currentDepths[measurements.Key] = Math.Round(newDepth, 1);
+                                    currentDepths[measurements.Key] = Math.Round(newDepth, 1);
                                 }
                                 else
                                     throw new ValueUnavailableException();
