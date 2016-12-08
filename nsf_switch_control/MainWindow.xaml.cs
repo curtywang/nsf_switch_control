@@ -183,11 +183,11 @@ namespace NsfSwitchControl
 					labelTimeElapsed.Content = (DateTime.Now.Subtract(startDateTime)).ToString(@"mm\:ss") + ", Current Ablation Group: " + impMeasCont.GetCurrentAblationGroupSideAndCount().Item1 + ", Ablation Groups: " + impMeasCont.GroupsAblating() + ", Counts Taken: " + impMeasCont.SamplesTaken();
                     if (checkBoxDepthController.IsChecked == true)
                     {
-                        labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N");
-                        labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E");
-                        labelSAblationDepth.Content = impMeasCont.GetCurrentDepth("S");
-                        labelWAblationDepth.Content = impMeasCont.GetCurrentDepth("W");
-                        labelBAblationDepth.Content = impMeasCont.GetCurrentDepth("B");
+                        labelNAblationDepth.Content = impMeasCont.GetCurrentDepth("N").ToString("N1");
+                        labelEAblationDepth.Content = impMeasCont.GetCurrentDepth("E").ToString("N1");
+                        labelSAblationDepth.Content = impMeasCont.GetCurrentDepth("S").ToString("N1");
+                        labelWAblationDepth.Content = impMeasCont.GetCurrentDepth("W").ToString("N1");
+                        labelBAblationDepth.Content = impMeasCont.GetCurrentDepth("B").ToString("N1");
                     }
                     else
                     {
@@ -1093,7 +1093,7 @@ namespace NsfSwitchControl
                                 {
                                     double newDepth = Double.Parse(replySplit[1]);
                                     if (newDepth >= currentDepths[measurements.Key])
-                                        currentDepths[measurements.Key] = newDepth;
+                                        currentDepths[measurements.Key] = Math.Round(newDepth, 1);
                                 }
                                 else
                                     throw new ValueUnavailableException();
