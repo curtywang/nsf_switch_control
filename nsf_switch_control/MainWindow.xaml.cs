@@ -1070,7 +1070,8 @@ namespace NsfSwitchControl
                         }
                         foreach (KeyValuePair<string, List<SingleImpedanceMeasurement>> measurements in currentMeasurementLists)
                         {
-                            if (measurements.Value.Count == 3)
+                            Console.WriteLine(measurements.Key + measurements.Value.Count.ToString());
+                            if ((measurements.Value.Count == 3) && (measurements.Key != "T"))
                             {
                                 // We send a query of the following type: '<time>,<side>,<pos>,<magn_change>,<phase_change>,<init_magn>,<init_phase>'
                                 // and expect a response of the following type: '<side>,<depth>'
@@ -1426,7 +1427,8 @@ namespace NsfSwitchControl
 
 		private void CollectData(object stateInf)
 		{
-			switch (imcState)
+            swMatCont.DisconnectAll();
+            switch (imcState)
 			{
 				case imcStatusEnum.preAblation:
 					swMatCont.Connect(preAblationSwitchGroup, true);
