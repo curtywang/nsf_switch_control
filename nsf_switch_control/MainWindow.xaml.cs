@@ -1129,7 +1129,7 @@ namespace NsfSwitchControl
 				foreach (AblationGroup group in imcLink.ablationSwitchGroups)
 				{
                     // TODO: Update intervals here, set active to false if we're done
-                    if ((diffDepths[group.activeSides[0]] > 1.0) && (group.active == true))
+                    if ((diffDepths[group.activeSides[0]] > 0.0) && (group.active == true))
                         group.active = true;
                     else
                         group.active = false;
