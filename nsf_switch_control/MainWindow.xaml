@@ -62,6 +62,30 @@
             <ListBox x:Name="listBoxFourthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="3" />
             <ListBox x:Name="listBoxFifthAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="4" />
             <ListBox x:Name="listBoxLastAblationSide" SelectionMode="Multiple" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0" Grid.Column="5" />
+            <WrapPanel Grid.Row="1" Grid.Column="0">
+                <Label x:Name="__titleFirstASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxFirstASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="1">
+                <Label x:Name="__titleSecondASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxSecondASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="2">
+                <Label x:Name="__titleThirdASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxThirdASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="3">
+                <Label x:Name="__titleFourthASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxFourthASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="4">
+                <Label x:Name="__titleFifthASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxFifthASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
+            <WrapPanel Grid.Row="1" Grid.Column="5">
+                <Label x:Name="__titleLastASCounts" Content="Counts:" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                <TextBox x:Name="textboxLastASCounts" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
+            </WrapPanel>
         </Grid>
         <Grid Height="Auto" Margin="0,0,0,5">
             <Grid.RowDefinitions>
@@ -145,10 +169,10 @@
                 <Label x:Name="__titleControllerStatus" Content="Controller Status:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <Label x:Name="labelControllerStatus" Content="Uninitialized" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False" />
             </WrapPanel>
-            <WrapPanel Grid.Row="1" Grid.Column="0">
+            <!--<WrapPanel Grid.Row="1" Grid.Column="0">
                 <Label x:Name="__titleImpMeasSamplesDesired" Content="Desired Number of Ablation Intervals:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <TextBox x:Name="textboxImpMeasSamplesDesired" Width="Auto" Text="10" VerticalAlignment="Center" GotKeyboardFocus="selectAllTextInTextbox" />
-            </WrapPanel>
+            </WrapPanel>-->
             <WrapPanel Grid.Row="1" Grid.Column="1" Margin="25,0,0,0">
                 <Label x:Name="__titleTimeElapsed" Content="Time elapsed:" HorizontalAlignment="Left" VerticalAlignment="Top" />
                 <Label x:Name="labelTimeElapsed" Content="00:00" HorizontalAlignment="Left" VerticalAlignment="Top" IsEnabled="False"  />

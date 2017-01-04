@@ -143,7 +143,7 @@ namespace NsfSwitchControl
 
 		private void buttonStartCollection_Click(object sender, RoutedEventArgs e)
 		{
-			if (textboxFolderPath.Text != "" && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
+			if (textboxFolderPath.Text != "") // && int.Parse(textboxImpMeasSamplesDesired.Text) >= 2)
 			{
 				Dictionary<string, double> ablationTargetDepths = new Dictionary<string, double> {
                     { "N", double.Parse(textboxNAblationTarget.Text) },
@@ -153,7 +153,7 @@ namespace NsfSwitchControl
                     { "B", double.Parse(textboxBAblationTarget.Text) },
                 };
                 int impedanceMeasurementInterval = int.Parse(textboxImpMeasIntervalDesired.Text);
-                int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
+                //int totalNumberOfImpMeasSamples = int.Parse(textboxImpMeasSamplesDesired.Text);
 				impMeasCont.SetUseExternalElectrodes(checkBoxExternalElectrodes.IsChecked);
 
 				string firstAblationSides = String.Join(",", listBoxFirstAblationSide.SelectedItems.OfType<string>().ToList());
@@ -170,7 +170,12 @@ namespace NsfSwitchControl
 				    impMeasCont.SetActiveAblationSides();
                 else
                     impMeasCont.SetActiveAblationSides(finalAblationList);
-                impMeasCont.SetBaseAblationCountLimits(totalNumberOfImpMeasSamples);
+                List<int> finalAblationListCounts = new List<int>
+                {
+                    int.Parse(textboxFirstASCounts.Text), int.Parse(textboxSecondASCounts.Text), int.Parse(textboxThirdASCounts.Text),
+                    int.Parse(textboxFourthASCounts.Text), int.Parse(textboxFifthASCounts.Text), int.Parse(textboxLastASCounts.Text),
+                };
+                impMeasCont.SetBaseAblationCountLimits(finalAblationListCounts);
 				impMeasCont.SetBaseAblationDurations(impedanceMeasurementInterval);
 
 				tempMeasCont.StartMeasurement();
@@ -424,7 +429,7 @@ namespace NsfSwitchControl
 		private NationalInstruments.Visa.MessageBasedSession mbSession;
 		public bool IsEnabled;
 
-		private const string __lcrMeterPort = "ASRL5::INSTR";
+		private const string __lcrMeterPort = "ASRL6::INSTR";
 		private const int __lcrFrequency = 100000;
 		private const string __termchar = "\r";
 
@@ -1318,23 +1323,23 @@ namespace NsfSwitchControl
 
 		public void SetBaseAblationDurations(int inDuration)
 		{
-            if (!usingDepthController)
-            {
-                int baseInterval = inDuration * 1000;
-                foreach (AblationGroup group in ablationSwitchGroups)
-                {
-                    if (group.activeSides.Count > 1)
-                        group.activeDuration = baseInterval;
-                    else // we do less time to avoid too much power deposition
-                        group.activeDuration = baseInterval / 10;
-                }
-            }
-            else
-            {
+            //if (!usingDepthController)
+            //{
+            //    int baseInterval = inDuration * 1000;
+            //    foreach (AblationGroup group in ablationSwitchGroups)
+            //    {
+            //        if (group.activeSides.Count > 1)
+            //            group.activeDuration = baseInterval;
+            //        else // we do less time to avoid too much power deposition
+            //            group.activeDuration = baseInterval / 10;
+            //    }
+            //}
+            //else
+            //{
                 int baseInterval = inDuration * 1000;
                 foreach (AblationGroup group in ablationSwitchGroups)
                     group.activeDuration = baseInterval;
-            }
+            //}
         }
 
 
@@ -1350,6 +1355,24 @@ namespace NsfSwitchControl
 					group.countLimit = 2 * inLimit;
 			}
 		}
+
+        public void SetBaseAblationCountLimits(List<int> inLimits)
+        {
+            if (usingDepthController)
+            {
+                SetBaseAblationCountLimits(0);
+                return;
+            }
+            else
+            {
+                for (int i = 0; i < ablationSwitchGroups.Count; i++)
+                {
+                    AblationGroup group = ablationSwitchGroups[i];
+                    int inLimit = inLimits[i];
+                    group.countLimit = inLimit;
+                }
+            }
+        }
 
 
         public void SetActiveAblationSides() {
