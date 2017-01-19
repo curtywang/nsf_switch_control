@@ -894,6 +894,30 @@ namespace NsfSwitchControl
 	}
 
 
+    public class MovingAverageFloat
+    {
+        private Queue<double> __data;
+        public MovingAverageFloat()
+        {
+            __data = new Queue<double>(3);
+        }
+        public void AddNumber(double number)
+        {
+            if (__data.Count == 3)
+                __data.Dequeue();
+            __data.Enqueue(number);
+        }
+        public double GetNumber()
+        {
+            if (__data.Count == 0)
+            {
+                return 0.0;
+            }
+            return __data.Average();
+        }
+    }
+
+
 	public class AblationGroup
 	{
 		public List<string> activeSides;
@@ -962,9 +986,9 @@ namespace NsfSwitchControl
 			    {"B", new List<SingleImpedanceMeasurement>() },
 			    {"T", new List<SingleImpedanceMeasurement>() },
 		    };
-			    private Dictionary<string, SingleImpedanceMeasurement> initialMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
-			    private Dictionary<string, SingleImpedanceMeasurement> currentMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
-			    private Dictionary<string, List<SingleImpedanceMeasurement>> currentMeasurementLists = new Dictionary<string, List<SingleImpedanceMeasurement>>
+			private Dictionary<string, SingleImpedanceMeasurement> initialMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
+			private Dictionary<string, SingleImpedanceMeasurement> currentMeasurements = new Dictionary<string, SingleImpedanceMeasurement>();
+			private Dictionary<string, List<SingleImpedanceMeasurement>> currentMeasurementLists = new Dictionary<string, List<SingleImpedanceMeasurement>>
 		    {
 			    {"N", new List<SingleImpedanceMeasurement>() },
 			    {"E", new List<SingleImpedanceMeasurement>() },
@@ -973,14 +997,14 @@ namespace NsfSwitchControl
 			    {"B", new List<SingleImpedanceMeasurement>() },
 			    {"T", new List<SingleImpedanceMeasurement>() },
 		    };
-			    private Dictionary<string, double> currentDepths = new Dictionary<string, double>
+			private Dictionary<string, MovingAverageFloat> currentDepths = new Dictionary<string, MovingAverageFloat> //double> currentDepths = new Dictionary<string, double>
 		    {
-			    {"N", 0.0},
-			    {"E", 0.0},
-			    {"S", 0.0},
-			    {"W", 0.0},
-			    {"B", 0.0},
-			    {"T", 0.0}
+			    {"N", new MovingAverageFloat()},
+			    {"E", new MovingAverageFloat()},
+			    {"S", new MovingAverageFloat()},
+			    {"W", new MovingAverageFloat()},
+			    {"B", new MovingAverageFloat()},
+			    {"T", new MovingAverageFloat()}
 		    };
 
 			private System.Threading.Timer collectionTimer;
@@ -1097,7 +1121,7 @@ namespace NsfSwitchControl
                                 if (measurements.Key == replySplit[0])
                                 {
                                     double newDepth = Double.Parse(replySplit[1]);
-                                    currentDepths[measurements.Key] = Math.Round(newDepth, 1);
+                                    currentDepths[measurements.Key].AddNumber(Math.Round(newDepth, 1));
                                 }
                                 else
                                     throw new ValueUnavailableException();
@@ -1119,7 +1143,12 @@ namespace NsfSwitchControl
 
 			public Dictionary<string, double> GetDepths()
 			{
-				return currentDepths;
+                Dictionary<string, double> returnDict = new Dictionary<string, double>();
+                foreach (KeyValuePair<string, MovingAverageFloat> entry in currentDepths)
+                {
+                    returnDict.Add(entry.Key, entry.Value.GetNumber());
+                }
+                return returnDict;
 			}
 
 			private void UpdateAblationIntervals()
@@ -1127,13 +1156,12 @@ namespace NsfSwitchControl
 				Dictionary<string, double> diffDepths = new Dictionary<string, double>();
 				foreach (KeyValuePair<string, double> entry in imcLink.targetDepths)
 				{
-					diffDepths[entry.Key] = imcLink.targetDepths[entry.Key] - currentDepths[entry.Key];
+					diffDepths[entry.Key] = imcLink.targetDepths[entry.Key] - currentDepths[entry.Key].GetNumber();
 				}
 
 				// now that we have the diffs, we can adjust each side if we know which ablation group is in what
 				foreach (AblationGroup group in imcLink.ablationSwitchGroups)
 				{
-                    // TODO: Update intervals here, set active to false if we're done
                     if ((diffDepths[group.activeSides[0]] > 0.0) && (group.active == true))
                         group.active = true;
                     else
