@@ -1474,8 +1474,7 @@ namespace NsfSwitchControl
 			return false;
 		}
 
-
-		private void CollectData(object stateInf)
+        private void CollectData(object stateInf)
 		{
             swMatCont.DisconnectAll();
             switch (imcState)
@@ -1505,7 +1504,7 @@ namespace NsfSwitchControl
 				case imcStatusEnum.inMeasurement:
 					for (int i = 0; i < 3; i++)
 					{
-						foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups)
+						foreach (Dictionary<string, List<string>> permutation in impedanceSwitchGroups.OrderRandomly()) // collect randomly
 						{
 							if (imcState != imcStatusEnum.isStopped)
 							{
@@ -1524,7 +1523,7 @@ namespace NsfSwitchControl
 					swMatCont.DisconnectAll();
 					// check if there is anything left to ablate
 					bool groupsLeftToAblate = false;
-					foreach (AblationGroup ag in ablationSwitchGroups)
+					foreach (AblationGroup ag in ablationSwitchGroups.OrderRandomly()) // collect randomly
 					{
 						if (ag.active && ((ag.countUsage < ag.countLimit) || (ag.countLimit == 0)))
 						{
@@ -1628,4 +1627,21 @@ namespace NsfSwitchControl
 		}
 
 	}
+
+    public static class Extensions
+    {
+        public static IEnumerable<T> OrderRandomly<T>(this IEnumerable<T> sequence)
+        {
+            Random random = new Random();
+            List<T> copy = sequence.ToList();
+
+            while (copy.Count > 0)
+            {
+                int index = random.Next(copy.Count);
+                yield return copy[index];
+                copy.RemoveAt(index);
+            }
+        }
+    }
 }
+
